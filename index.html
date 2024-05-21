@@ -33,7 +33,6 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
@@ -64,7 +63,7 @@ ul.task-list li input[type="checkbox"] {
 <link rel="stylesheet" href="styles.css">
 </head>
 
-<body class="nav-sidebar docked nav-fixed fullcontent">
+<body class="nav-sidebar docked nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -106,7 +105,7 @@ ul.task-list li input[type="checkbox"] {
   </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
 <!-- sidebar -->
   <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation docked overflow-auto">
         <div class="mt-2 flex-shrink-0 align-items-center">
@@ -165,39 +164,33 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content column-page-right" id="quarto-document-content">
 
 
 
-<div class="grid">
-<div class="g-col-6">
+<div class="quarto-about-trestles column-page-right">
+  <div class="about-entity">
+    <img src="images/SERES_WaterChange.jpg" class="about-image
+  rounded " style="width: 20em;">
+  </div>
+  <div class="about-contents"><div id="hero-heading">
 <p><strong>Currently Under Developement</strong></p>
-<div class="cell" data-layout-align="center">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="images/SERES_WaterChange.jpg" class="img-fluid figure-img" style="width:60.0%"></p>
-</figure>
-</div>
-</div>
-</div>
-<p><strong>replace with map?</strong></p>
-</div>
-<div class="g-col-6">
 <section id="purpose" class="level2">
-<h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
+<h2 data-anchor-id="purpose">Purpose</h2>
 <p>This webpage/report is intended to aggregate information from different agencies (i.e.&nbsp;USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.</p>
 </section>
 <section id="data-sources" class="level2">
-<h2 class="anchored" data-anchor-id="data-sources">Data sources</h2>
+<h2 data-anchor-id="data-sources">Data sources</h2>
 <ul>
 <li>SFWMD: <a href="https://my.sfwmd.gov/dbhydroplsql/show_dbkey_info.main_menu">DBHYDRO</a></li>
 <li>USGS: <a href="https://waterdata.usgs.gov/nwis">NWIS</a></li>
 <li>USACE: <a href="https://w3.saj.usace.army.mil/h2o/reports.htm">SAJ Water Management</a></li>
 </ul>
 </section>
+</div></div>
 </div>
-</div>
+
+
 
 
 
@@ -222,13 +215,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
   toggleBodyColorPrimary();  
-  const icon = "";
-  const anchorJS = new window.AnchorJS();
-  anchorJS.options = {
-    placement: 'right',
-    icon: icon
-  };
-  anchorJS.add('.anchored');
   const isCodeAnnotation = (el) => {
     for (const clz of el.classList) {
       if (clz.startsWith('code-annotation-')) {                     
