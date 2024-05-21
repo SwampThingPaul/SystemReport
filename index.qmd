@@ -1,0 +1,16 @@
+---
+about:
+  id: hero-heading
+  template: trestles
+  image: images/SERES_WaterChange.jpg
+  image-width: 5in
+---
+# Purpose
+
+This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.
+
+# Data sources
+
+* SFWMD: [DBHYDRO](https://my.sfwmd.gov/dbhydroplsql/show_dbkey_info.main_menu)
+* USGS: [NWIS](https://waterdata.usgs.gov/nwis)
+* USACE: [SAJ Water Management](https://w3.saj.usace.army.mil/h2o/reports.htm)

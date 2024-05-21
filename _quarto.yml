@@ -1,0 +1,44 @@
+project:
+  type: website
+ 
+
+website:
+  title: "Everglades System Conditions Report"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+  sidebar:
+    style: "docked"
+    search: true
+    contents: 
+      - href: KCOL.qmd
+        text: Kissimmee Chain of Lakes
+      - href: LOK.qmd
+        text: Lake Okeechobee
+      - href: Estuaries.qmd
+        text: Northern Estuaries
+      - href: EAA.qmd
+        text: EAA
+      - href: STAs.qmd
+        text: STAs
+      - href: WCAs.qmd
+        text: WCAs
+      - href: ENP.qmd
+        text: ENP
+  page-footer: 
+   border: false
+   left: "Published with [Quarto](https://quarto.org/)"
+
+format:
+  html:
+    grid:
+      sidebar-width: 350px
+      margin-width: 10px
+    # page-layout: full
+    theme: cosmo
+    css: styles.css
+    toc: false
+
+
+
