@@ -1,10 +1,17 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Purpose",
-    "section": "",
-    "text": "Purpose\nThis webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\nData sources\n\nSFWMD: DBHYDRO\nUSGS: NWIS\nUSACE: SAJ Water Management"
+    "objectID": "index.html#purpose",
+    "href": "index.html#purpose",
+    "title": "Everglades System Conditions Report",
+    "section": "Purpose",
+    "text": "Purpose\nThis webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change."
+  },
+  {
+    "objectID": "index.html#data-sources",
+    "href": "index.html#data-sources",
+    "title": "Everglades System Conditions Report",
+    "section": "Data sources",
+    "text": "Data sources\n\nSFWMD: DBHYDRO\nUSGS: NWIS\nUSACE: SAJ Water Management\n\n:::\n\nThis content appears below the formatted about page content."
   },
   {
     "objectID": "about.html",
