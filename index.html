@@ -33,6 +33,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
@@ -168,37 +169,35 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="this-content-appears-above-the-formatted-about-page-content." class="level3">
-<h3 data-anchor-id="this-content-appears-above-the-formatted-about-page-content.">This content appears above the formatted about page content.</h3>
-<div class="quarto-about-trestles">
-  <div class="about-entity">
-    <img src="images/SERES_WaterChange.jpg" class="about-image
-  rounded " style="width: 5in;">
-  </div>
-  <div class="about-contents"><div id="hero-heading">
-</div></div>
+<div class="grid">
+<div class="g-col-6">
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/SERES_WaterChange.jpg" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
 </div>
-
-</section>
+</div>
+</div>
+</div>
+<div class="g-col-6">
 <section id="purpose" class="level2">
-<h2 data-anchor-id="purpose">Purpose</h2>
+<h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
 <p>This webpage/report is intended to aggregate information from different agencies (i.e.&nbsp;USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.</p>
 </section>
 <section id="data-sources" class="level2">
-<h2 data-anchor-id="data-sources">Data sources</h2>
+<h2 class="anchored" data-anchor-id="data-sources">Data sources</h2>
 <ul>
 <li>SFWMD: <a href="https://my.sfwmd.gov/dbhydroplsql/show_dbkey_info.main_menu">DBHYDRO</a></li>
 <li>USGS: <a href="https://waterdata.usgs.gov/nwis">NWIS</a></li>
 <li>USACE: <a href="https://w3.saj.usace.army.mil/h2o/reports.htm">SAJ Water Management</a></li>
 </ul>
-<p>:::</p>
-<section id="this-content-appears-below-the-formatted-about-page-content." class="level3">
-<h3 data-anchor-id="this-content-appears-below-the-formatted-about-page-content.">This content appears below the formatted about page content.</h3>
-
-
-
 </section>
-</section>
+</div>
+</div>
+
+
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -221,6 +220,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
   toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
   const isCodeAnnotation = (el) => {
     for (const clz of el.classList) {
       if (clz.startsWith('code-annotation-')) {                     
