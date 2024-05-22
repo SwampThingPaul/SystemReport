@@ -4,21 +4,28 @@
     "href": "index.html",
     "title": "Everglades System Conditions Report",
     "section": "",
-    "text": "Currently Under Developement\nMaybe Include a map? could also get fancier with the page design."
+    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\n\n\nSFWMD: DBHYDRO\nUSGS: NWIS\nUSACE: SAJ Water Management"
   },
   {
     "objectID": "index.html#purpose",
     "href": "index.html#purpose",
     "title": "Everglades System Conditions Report",
-    "section": "Purpose",
-    "text": "Purpose\nThis webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change."
+    "section": "",
+    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change."
   },
   {
     "objectID": "index.html#data-sources",
     "href": "index.html#data-sources",
     "title": "Everglades System Conditions Report",
-    "section": "Data sources",
-    "text": "Data sources\n\nSFWMD: DBHYDRO\nUSGS: NWIS\nUSACE: SAJ Water Management"
+    "section": "",
+    "text": "SFWMD: DBHYDRO\nUSGS: NWIS\nUSACE: SAJ Water Management"
+  },
+  {
+    "objectID": "index.html#system-snapshot",
+    "href": "index.html#system-snapshot",
+    "title": "Everglades System Conditions Report",
+    "section": "System Snapshot",
+    "text": "System Snapshot\nInclude a green/red light (below/above regulation schedule) map for each area?"
   },
   {
     "objectID": "about.html",
