@@ -1,5 +1,26 @@
 [
   {
+    "objectID": "WLCon.html",
+    "href": "WLCon.html",
+    "title": "Stage Datum",
+    "section": "",
+    "text": "The South Florida Water Management District (SFWMD) and agency partners is upgrading the reference system used to measure water elevation readings. SFWMD will shift from reporting water elevation readings in the National Geodetic Vertical Datum of 1929 (NGVD 29) to the North American Vertical Datum of 1988 (NAVD 88).\nBelow are values for waterbodies across the Greater Everglades Ecosystem.\nRegionConversionValue (Feet) 1Lake Alligator1.00Lake Gentry1.10Lake Myrtle1.00Lake Hart1.10East Lake Tohopekaliga1.00Lake Tohopekaliga1.20Lake Cypress1.20Lake Hatchineha1.20Lake Kissimmee1.20Lake Istokpoga1.20Lake Okeechobee1.25WCA 11.50WCA 2A1.50WCA 3A1.50Rotenberger1.45Holey Land1.45St Lucie @ C23 C24 C251.50 1 NGVD29 to NAVD88 conversion value as reported by USACE and SFWMD"
+  },
+  {
+    "objectID": "WLCon.html#conversion-between-datums",
+    "href": "WLCon.html#conversion-between-datums",
+    "title": "Stage Datum",
+    "section": "Conversion between datums",
+    "text": "Conversion between datums\n\nTo convert to NAVD88\n\\[ NGVD29 - Conversion Factor = NAVD88 \\]\nFor instance on 2007-01-16, gage height was reported as 8.63 ft NGVD29. The hypothetical conversion factor is 1.66. Therefore to convert to NAVD88 it would look like \\(8.63\\;ft\\;\\;NGVD29 - 1.66 = 6.97\\;ft\\;\\;NAVD88\\).\n\n\nTo convert to NAVD29\n\\[ NAVD88 + Conversion Factor = NGVD29 \\]\nFor instance on 2007-01-16, gage height was reported as 10.22 ft NAVD88. The hypothetical conversion factor is 1.42. Therefore to convert to NGVD29 it would look like \\(10.22\\;ft\\;\\;NAVD88 + 1.42 = 11.64\\;ft\\;\\;NGVD29\\).\nAdditional information regarding datum conversions can be found at the USGS EDEN page."
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site\n\n1 + 1\n\n[1] 2"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Everglades System Conditions Report",
@@ -26,12 +47,5 @@
     "title": "Everglades System Conditions Report",
     "section": "System Snapshot",
     "text": "System Snapshot\nInclude a green/red light (below/above regulation schedule) map for each area?"
-  },
-  {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
-    "section": "",
-    "text": "About this site\n\n1 + 1\n\n[1] 2"
   }
 ]
