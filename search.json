@@ -35,13 +35,6 @@
     "text": "SFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
   },
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
-    "section": "",
-    "text": "About this site\n\n1 + 1\n\n[1] 2"
-  },
-  {
     "objectID": "datProc.html",
     "href": "datProc.html",
     "title": "Data Source and Info",
@@ -56,11 +49,25 @@
     "text": "Kissimmee Chain of Lakes\n\n\n\nLake stage monitoring locations for lakes within the Kissimee Chain-of-Lakes. Data source: SFWMD DBHYDROLakeStationDBKEYLakes Hart, Mary JaneS62_HWN219LKMJ16239East Lake TohopekaligaS59_HWN265TOHOEEV7583Lake TohopekaligaS61_HWN255TOHOWLQ978Cypress LakeLCYP19R88301Lake HatchinehaLHATCH3T0937Lake Myrtle, Preston, JoelS57_HWN239Lakes Trout, Coon, Center, Lizzie, AlligatorS58_H15529LLZZFZ584ALLIFZ586Lake GentryS63_HWN328LKGTDO539Lake KissimeeS65_HWN313LKISSAN593"
   },
   {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site\n\n1 + 1\n\n[1] 2"
+  },
+  {
+    "objectID": "enso.html",
+    "href": "enso.html",
+    "title": "Climate Information",
+    "section": "",
+    "text": "Information provided by The International Research Institute for Climate and Society, Columbia University Climate School. Source: https://iri.columbia.edu/ENSO\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nList of Models"
+  },
+  {
     "objectID": "KCOL.html",
     "href": "KCOL.html",
     "title": "Kissimmee Chain of Lakes",
     "section": "",
-    "text": "Updated: 2024-06-13 08:47:00 EDT\nLake stage relative to Zone A of the regulation schedule for the Kissimmee Chain of LakesDate(Month-Day)LakeΔ(Stage, Sch.)06-12Lakes Hart, Mary Jane-0.71East Lake Tohopekaliga-1.60Lake Tohopekaliga-1.57Cypress Lake-1.90Lake Hatchineha-1.88Lake Myrtle, Preston, Joel-1.18Lakes Trout, Coon, Center, Lizzie, Alligator---Lake Gentry-1.57Lake Kissimee-2.02  &gt; 1.0 ft;   1.0 ‒ 0.5 ft;   0.5 ‒ 0.1 ft;   0.1 ‒ -0.1 ft  -0.1 ‒ -0.5 ft  -0.5 ‒ -1.0 ft;   &lt; -1.0 ft;"
+    "text": "Updated: 2024-06-13 14:35:00 EDT\nLake stage relative to Zone A of the regulation schedule for the Kissimmee Chain of LakesDate(Month-Day)LakeΔ(Stage, Sch.)06-12Lakes Hart, Mary Jane-0.71East Lake Tohopekaliga-1.60Lake Tohopekaliga-1.57Cypress Lake-1.90Lake Hatchineha-1.88Lake Myrtle, Preston, Joel-1.18Lakes Trout, Coon, Center, Lizzie, Alligator---Lake Gentry-1.57Lake Kissimee-2.02  &gt; 1.0 ft;   1.0 ‒ 0.5 ft;   0.5 ‒ 0.1 ft;   0.1 ‒ -0.1 ft  -0.1 ‒ -0.5 ft  -0.5 ‒ -1.0 ft;   &lt; -1.0 ft;"
   },
   {
     "objectID": "KCOL.html#overview-interactive-map",
