@@ -14,6 +14,111 @@
     "text": "The South Florida Water Management District (SFWMD) and agency partners is upgrading the reference system used to measure water elevation readings. SFWMD will shift from reporting water elevation readings in the National Geodetic Vertical Datum of 1929 (NGVD 29) to the North American Vertical Datum of 1988 (NAVD 88).\nBelow are values for waterbodies across the Greater Everglades Ecosystem.\n\n\n\nRegionConversionValue (Feet) 1Lake Alligator1.00Lake Gentry1.10Lake Myrtle1.00Lake Hart1.10East Lake Tohopekaliga1.00Lake Tohopekaliga1.20Lake Cypress1.20Lake Hatchineha1.20Lake Kissimmee1.20Lake Istokpoga1.20Lake Okeechobee1.25WCA 11.50WCA 2A1.50WCA 3A1.50Rotenberger1.45Holey Land1.45St Lucie @ C23 C24 C251.50 1 NGVD29 to NAVD88 conversion value as reported by USACE and SFWMD\n\n\n\n\n\\[ NGVD29 - Conversion\\;Value = NAVD88 \\]\nFor instance on 2007-01-16, gage height was reported as 8.63 ft NGVD29. The hypothetical conversion factor is 1.66. Therefore to convert to NAVD88 it would look like \\(8.63\\;ft\\;NGVD29 - 1.66 = 6.97\\;ft\\;NAVD88\\).\n\n\n\n\\[ NAVD88 + Conversion\\;Value = NGVD29 \\]\nFor instance on 2007-01-16, gage height was reported as 10.22 ft NAVD88. The hypothetical conversion factor is 1.42. Therefore to convert to NGVD29 it would look like \\(10.22\\;ft\\;NAVD88 + 1.42 = 11.64\\;ft\\;NGVD29\\).\nAdditional information regarding datum conversions can be found at the USGS EDEN page.\nFor site specific conversion factors there are tools to convert between NGVD29 and NAVD88 like VERTCON."
   },
   {
+    "objectID": "KCOL.html",
+    "href": "KCOL.html",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "",
+    "text": "Updated: 2024-08-20 13:47:00 EDT\nLake stage relative to Zone A of the regulation schedule for the Kissimmee Chain of LakesDate(Month-Day)LakeΔ(Stage, Sch.)08-19Lakes Hart, Mary Jane-0.02East Lake Tohopekaliga-0.08Lake Tohopekaliga-0.10Cypress Lake-1.42Lake Hatchineha-1.41Lake Myrtle, Preston, Joel-0.54Lakes Trout, Coon, Center, Lizzie, Alligator-0.57Lake Gentry-0.74Lake Kissimee-1.46  &gt; 1.0 ft;   1.0 ‒ 0.5 ft;   0.5 ‒ 0.1 ft;   0.1 ‒ -0.1 ft  -0.1 ‒ -0.5 ft  -0.5 ‒ -1.0 ft;   &lt; -1.0 ft;"
+  },
+  {
+    "objectID": "KCOL.html#overview-interactive-map",
+    "href": "KCOL.html#overview-interactive-map",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Overview interactive map",
+    "text": "Overview interactive map"
+  },
+  {
+    "objectID": "KCOL.html#lakes-hart-mary-jane",
+    "href": "KCOL.html#lakes-hart-mary-jane",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lakes Hart, Mary Jane",
+    "text": "Lakes Hart, Mary Jane\n\n\n\n\n\nLakes Hart, Mary Jane daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLKMJ A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202360.100.050.450.1008-19202459.810.050.05-0.1908-19202559.98-0.060.03-0.02 A in Feet (NGVD29) B Difference between Zone A and LKMJ"
+  },
+  {
+    "objectID": "KCOL.html#east-lake-tohopekaliga",
+    "href": "KCOL.html#east-lake-tohopekaliga",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "East Lake Tohopekaliga",
+    "text": "East Lake Tohopekaliga\n\n\n\n\n\nEast Lake Tohopekaliga daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearTOHOEE A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202355.750.170.66-0.7508-19202456.170.100.32-0.3308-19202556.420.130.69-0.08 A in Feet (NGVD29) B Difference between Zone A and TOHOEE"
+  },
+  {
+    "objectID": "KCOL.html#lake-tohopekaliga",
+    "href": "KCOL.html#lake-tohopekaliga",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lake Tohopekaliga",
+    "text": "Lake Tohopekaliga\n\n\n\n\n\nLake Tohopekaliga daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearTOHOW A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202353.510.180.740.0108-19202453.410.080.46-0.0908-19202553.400.090.70-0.10 A in Feet (NGVD29) B Difference between Zone A and TOHOW"
+  },
+  {
+    "objectID": "KCOL.html#cypress-lake",
+    "href": "KCOL.html#cypress-lake",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Cypress Lake",
+    "text": "Cypress Lake\n\n\n\n\n\nCypress Lake daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLCYP19R A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202349.770.140.66-1.2308-19202450.020.06-0.08-0.9808-19202549.58-0.100.36-1.42 A in Feet (NGVD29) B Difference between Zone A and LCYP19R"
+  },
+  {
+    "objectID": "KCOL.html#lake-hatchineha",
+    "href": "KCOL.html#lake-hatchineha",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lake Hatchineha",
+    "text": "Lake Hatchineha\n\n\n\n\n\nLake Hatchineha daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLHATCH3 A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202349.750.120.65-1.2508-19202450.020.05-0.09-0.9808-19202549.59-0.100.35-1.41 A in Feet (NGVD29) B Difference between Zone A and LHATCH3"
+  },
+  {
+    "objectID": "KCOL.html#lake-myrtle-preston-joel",
+    "href": "KCOL.html#lake-myrtle-preston-joel",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lake Myrtle, Preston, Joel",
+    "text": "Lake Myrtle, Preston, Joel\n\n\n\n\n\nLake Myrtle, Preston, Joel daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearS57_H A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202360.890.140.38-0.1108-19202460.420.080.17-0.5808-19202560.46-0.100.15-0.54 A in Feet (NGVD29) B Difference between Zone A and S57 HW"
+  },
+  {
+    "objectID": "KCOL.html#lakes-trout-coon-center-lizzie-alligator",
+    "href": "KCOL.html#lakes-trout-coon-center-lizzie-alligator",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lakes Trout, Coon, Center, Lizzie, Alligator",
+    "text": "Lakes Trout, Coon, Center, Lizzie, Alligator\n\n\n[1] NA\n\n\n\n\n\nLakes Trout, Coon, Center, Lizzie, Alligator daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Alligator Lake this time for the current and last three water yearsDate(Month-Day)Water YearALLI A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202362.570.150.21-0.6308-19202462.780.040.13-0.4208-19202562.63-0.050.41-0.57 A in Feet (NGVD29) B Difference between Zone A and ALLI\n\n\n\n\n\n\nStage and recession rates for Lake Lizzie this time for the current and last three water yearsDate(Month-Day)Water YearLLZZ A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202362.480.150.22-0.7208-19202462.690.040.14-0.5108-192025- NR -- NR -- NR -- NR - A in Feet (NGVD29) B Difference between Zone A and LLZZ"
+  },
+  {
+    "objectID": "KCOL.html#lake-gentry",
+    "href": "KCOL.html#lake-gentry",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lake Gentry",
+    "text": "Lake Gentry\n\n\n\n\n\nLake Gentry daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Lake Gentry this time for the current and last three water yearsDate(Month-Day)Water YearLKGT A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-19202360.090.050.16-0.9108-19202460.28-0.100.17-0.7208-19202560.26-0.010.71-0.74 A in Feet (NGVD29) B Difference between Zone A and LKGT"
+  },
+  {
+    "objectID": "KCOL.html#lake-kissimmee",
+    "href": "KCOL.html#lake-kissimmee",
+    "title": "Kissimmee Chain of Lakes",
+    "section": "Lake Kissimmee",
+    "text": "Lake Kissimmee\n\n\n\n\n\nLake Kissimee daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Lake KISSry this time for the current and last three water yearsDate(Month-Day)Water Year A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 08-1920230.120.64-1.2908-1920240.05-0.10-1.0408-192025-0.100.36-1.46 A in Feet (NGVD29) B Difference between Zone A and LKGT"
+  },
+  {
+    "objectID": "enso.html",
+    "href": "enso.html",
+    "title": "Climate Information",
+    "section": "",
+    "text": "Information provided by The International Research Institute for Climate and Society, Columbia University Climate School. Source: https://iri.columbia.edu/ENSO\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nList of Models"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site\n\n1 + 1\n\n[1] 2"
+  },
+  {
+    "objectID": "datProc.html",
+    "href": "datProc.html",
+    "title": "Data Source and Info",
+    "section": "",
+    "text": "This page contains all the datasource information for the various different pages presented on this site."
+  },
+  {
+    "objectID": "datProc.html#kissimmee-chain-of-lakes",
+    "href": "datProc.html#kissimmee-chain-of-lakes",
+    "title": "Data Source and Info",
+    "section": "Kissimmee Chain of Lakes",
+    "text": "Kissimmee Chain of Lakes\n\n\n\nLake stage monitoring locations for lakes within the Kissimee Chain-of-Lakes. Data source: SFWMD DBHYDROLakeStationDBKEYLakes Hart, Mary JaneS62_HWN219LKMJ16239East Lake TohopekaligaS59_HWN265TOHOEEV7583Lake TohopekaligaS61_HWN255TOHOWLQ978Cypress LakeLCYP19R88301Lake HatchinehaLHATCH3T0937Lake Myrtle, Preston, JoelS57_HWN239Lakes Trout, Coon, Center, Lizzie, AlligatorS58_H15529LLZZFZ584ALLIFZ586Lake GentryS63_HWN328LKGTDO539Lake KissimeeS65_HWN313LKISSAN593"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Everglades System Conditions Report",
@@ -35,108 +140,24 @@
     "text": "SFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
   },
   {
-    "objectID": "datProc.html",
-    "href": "datProc.html",
-    "title": "Data Source and Info",
+    "objectID": "LOK.html",
+    "href": "LOK.html",
+    "title": "Lake Okeechobee",
     "section": "",
-    "text": "This page contains all the datasource information for the various different pages presented on this site."
+    "text": "Updated: 2024-08-20 13:49:00 EDT"
   },
   {
-    "objectID": "datProc.html#kissimmee-chain-of-lakes",
-    "href": "datProc.html#kissimmee-chain-of-lakes",
-    "title": "Data Source and Info",
-    "section": "Kissimmee Chain of Lakes",
-    "text": "Kissimmee Chain of Lakes\n\n\n\nLake stage monitoring locations for lakes within the Kissimee Chain-of-Lakes. Data source: SFWMD DBHYDROLakeStationDBKEYLakes Hart, Mary JaneS62_HWN219LKMJ16239East Lake TohopekaligaS59_HWN265TOHOEEV7583Lake TohopekaligaS61_HWN255TOHOWLQ978Cypress LakeLCYP19R88301Lake HatchinehaLHATCH3T0937Lake Myrtle, Preston, JoelS57_HWN239Lakes Trout, Coon, Center, Lizzie, AlligatorS58_H15529LLZZFZ584ALLIFZ586Lake GentryS63_HWN328LKGTDO539Lake KissimeeS65_HWN313LKISSAN593"
+    "objectID": "LOK.html#regulation-schedule",
+    "href": "LOK.html#regulation-schedule",
+    "title": "Lake Okeechobee",
+    "section": "Regulation Schedule",
+    "text": "Regulation Schedule\nFor details on the current Lake Okeechobee Regulation Schedule, please refer to the Lake Okeechobee System Operating Manual Water Control Plan (LOSOM WCP).\nCurrently, Lake Okeechobee is in Zone D of the LOSOM regulation schedule. The current average lake stage is 1.9 Ft above the Zone D floor.\n\n\n\nStage and recession rates this time for the current and last three\nwater yearsDate(Month-Day)Water YearStage(ft, NGVD29)7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)08-19202214.430.30- NR -08-19202312.71-0.07-0.3608-19202415.360.020.3908-19202514.060.120.49\n\n\n\n\n\n\n\nLake Okeechobee daily average stage elevation for water year 2025 (WY2025) relative to the last two water years relative to the Lake Okeechobee Regulation Schedule (LORS)."
   },
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
-    "section": "",
-    "text": "About this site\n\n1 + 1\n\n[1] 2"
-  },
-  {
-    "objectID": "enso.html",
-    "href": "enso.html",
-    "title": "Climate Information",
-    "section": "",
-    "text": "Information provided by The International Research Institute for Climate and Society, Columbia University Climate School. Source: https://iri.columbia.edu/ENSO\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nList of Models"
-  },
-  {
-    "objectID": "KCOL.html",
-    "href": "KCOL.html",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "",
-    "text": "Updated: 2024-06-13 14:35:00 EDT\nLake stage relative to Zone A of the regulation schedule for the Kissimmee Chain of LakesDate(Month-Day)LakeΔ(Stage, Sch.)06-12Lakes Hart, Mary Jane-0.71East Lake Tohopekaliga-1.60Lake Tohopekaliga-1.57Cypress Lake-1.90Lake Hatchineha-1.88Lake Myrtle, Preston, Joel-1.18Lakes Trout, Coon, Center, Lizzie, Alligator---Lake Gentry-1.57Lake Kissimee-2.02  &gt; 1.0 ft;   1.0 ‒ 0.5 ft;   0.5 ‒ 0.1 ft;   0.1 ‒ -0.1 ft  -0.1 ‒ -0.5 ft  -0.5 ‒ -1.0 ft;   &lt; -1.0 ft;"
-  },
-  {
-    "objectID": "KCOL.html#overview-interactive-map",
-    "href": "KCOL.html#overview-interactive-map",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Overview interactive map",
-    "text": "Overview interactive map"
-  },
-  {
-    "objectID": "KCOL.html#lakes-hart-mary-jane",
-    "href": "KCOL.html#lakes-hart-mary-jane",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lakes Hart, Mary Jane",
-    "text": "Lakes Hart, Mary Jane\n\n\n\n\n\nLakes Hart, Mary Jane daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLKMJ A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202359.36-0.07-0.28-0.6406-12202459.770.130.06-0.2306-12202559.290.02-0.42-0.71 A in Feet (NGVD29) B Difference between Zone A and LKMJ"
-  },
-  {
-    "objectID": "KCOL.html#east-lake-tohopekaliga",
-    "href": "KCOL.html#east-lake-tohopekaliga",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "East Lake Tohopekaliga",
-    "text": "East Lake Tohopekaliga\n\n\n\n\n\nEast Lake Tohopekaliga daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearTOHOEE A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202354.95-0.02-0.40-1.5506-12202455.030.03-0.29-1.4706-12202554.900.04-0.40-1.60 A in Feet (NGVD29) B Difference between Zone A and TOHOEE"
-  },
-  {
-    "objectID": "KCOL.html#lake-tohopekaliga",
-    "href": "KCOL.html#lake-tohopekaliga",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lake Tohopekaliga",
-    "text": "Lake Tohopekaliga\n\n\n\n\n\nLake Tohopekaliga daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearTOHOW A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202352.330.300.01-1.1706-12202452.150.16-0.19-1.3506-12202551.930.01-0.36-1.57 A in Feet (NGVD29) B Difference between Zone A and TOHOW"
-  },
-  {
-    "objectID": "KCOL.html#cypress-lake",
-    "href": "KCOL.html#cypress-lake",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Cypress Lake",
-    "text": "Cypress Lake\n\n\n\n\n\nCypress Lake daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLCYP19R A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202348.580.01-0.50-2.4206-12202450.460.090.52-0.5406-12202549.100.10-0.45-1.90 A in Feet (NGVD29) B Difference between Zone A and LCYP19R"
-  },
-  {
-    "objectID": "KCOL.html#lake-hatchineha",
-    "href": "KCOL.html#lake-hatchineha",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lake Hatchineha",
-    "text": "Lake Hatchineha\n\n\n\n\n\nLake Hatchineha daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearLHATCH3 A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202348.52-0.06-0.57-2.4806-12202450.460.040.50-0.5406-12202549.120.06-0.50-1.88 A in Feet (NGVD29) B Difference between Zone A and LHATCH3"
-  },
-  {
-    "objectID": "KCOL.html#lake-myrtle-preston-joel",
-    "href": "KCOL.html#lake-myrtle-preston-joel",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lake Myrtle, Preston, Joel",
-    "text": "Lake Myrtle, Preston, Joel\n\n\n\n\n\nLake Myrtle, Preston, Joel daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three water yearsDate(Month-Day)Water YearS57_H A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202359.960.01-0.22-1.0406-12202459.95-0.050.02-1.0506-12202559.820.00-0.37-1.18 A in Feet (NGVD29) B Difference between Zone A and S57 HW"
-  },
-  {
-    "objectID": "KCOL.html#lakes-trout-coon-center-lizzie-alligator",
-    "href": "KCOL.html#lakes-trout-coon-center-lizzie-alligator",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lakes Trout, Coon, Center, Lizzie, Alligator",
-    "text": "Lakes Trout, Coon, Center, Lizzie, Alligator\n\n\n\n\n\nLakes Trout, Coon, Center, Lizzie, Alligator daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Alligator Lake this time for the current and last three water yearsDate(Month-Day)Water YearALLI A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202362.130.17-0.34-1.0706-12202462.04-0.01-0.40-1.1606-122025- NR -- NR -- NR -- NR - A in Feet (NGVD29) B Difference between Zone A and ALLI\n\n\n\n\n\n\nStage and recession rates for Lake Lizzie this time for the current and last three water yearsDate(Month-Day)Water YearLLZZ A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202362.050.17-0.33-1.1506-12202461.960.01-0.40-1.2406-12202561.66-0.04-0.56-1.54 A in Feet (NGVD29) B Difference between Zone A and LLZZ"
-  },
-  {
-    "objectID": "KCOL.html#lake-gentry",
-    "href": "KCOL.html#lake-gentry",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lake Gentry",
-    "text": "Lake Gentry\n\n\n\n\n\nLake Gentry daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Lake Gentry this time for the current and last three water yearsDate(Month-Day)Water YearLKGT A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-12202359.570.13-0.38-1.4306-12202459.680.06-0.32-1.3206-12202559.430.02-0.55-1.57 A in Feet (NGVD29) B Difference between Zone A and LKGT"
-  },
-  {
-    "objectID": "KCOL.html#lake-kissimmee",
-    "href": "KCOL.html#lake-kissimmee",
-    "title": "Kissimmee Chain of Lakes",
-    "section": "Lake Kissimmee",
-    "text": "Lake Kissimmee\n\n\n\n\n\nLake Kissimee daily average stage elevation for (top) last 365 days and (bottom) water year 2025 (WY2025) relative to the last two water years relative to the regulation schedule.\n\n\n\n\n\n\n\n\nStage and recession rates for Lake KISSry this time for the current and last three water yearsDate(Month-Day)Water Year A 7-Day Recession Rate(ft 7-d⁻¹)30-Day Recession Rate(ft 30-d⁻¹)Δ(Stage, Sch.) B 06-122023-0.08-0.58-2.5106-1220240.030.54-0.5706-122025-0.03-0.52-2.02 A in Feet (NGVD29) B Difference between Zone A and LKGT"
+    "objectID": "LOK.html#discharge",
+    "href": "LOK.html#discharge",
+    "title": "Lake Okeechobee",
+    "section": "Discharge",
+    "text": "Discharge\n\n\n[1] 1\n[1] 2\n[1] 3\n[1] 4\n[1] 5\n[1] 6\n[1] 7\n\n\n\n\n\n\n\nTotal Lake Okeechobee inflow and outflow volume for measured inflow/ouflows. Data Source: SFWMD DBHydro .\n\n\n\n\n\n\n\n\n\nTotal Lake Okeechobee inflow and outflow by generalized basin for the past 14-days. Data Source: SFWMD DBHydro .\n\n\n\n\n\n\n\nStage and recession rates this time for the current and last three\nwater yearsDate(Year-Month-Day)Measured Inflow(kAcft d⁻¹)Measured Outflow(kAcft d⁻¹)Predicted Storage Volume (kAcft) A Δ Storage (kAcft)2024-08-192.910.003,3784.00 A Predicted storage volume based on fitted model to data presented in Table 7-8 of LOSOM WCP. Model is Storage (kAcft) = 3.73 * STAGE^1.66"
   }
 ]
