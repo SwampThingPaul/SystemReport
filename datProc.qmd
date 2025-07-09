@@ -1,0 +1,60 @@
+---
+title: "Data Source and Info"
+format:
+  html:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r date,echo=FALSE,message=FALSE,warning=FALSE}
+up.date=format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
+up.date=as.POSIXct(up.date,tz="America/New_York")
+
+dst.check=c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
+knitr::opts_chunk$set(echo=FALSE,
+                      message=FALSE,
+                      warning=FALSE,
+                      fig.path="_site/images/",
+                      dpi=200)
+
+library(AnalystHelper)
+library(flextable)
+```
+
+This page contains all the datasource information for the various different pages presented on this site. 
+
+## Kissimmee Chain of Lakes
+
+```{r KCOL DataSource, echo=F}
+KCOL.stg.dbkeys2=read.csv("./data/KCOL_dbkeys.csv")
+KCOL.stg.dbkeys2$Source="SFWMD DBHYDRO"
+
+cap.val=paste("Lake stage monitoring locations for lakes within the Kissimee Chain-of-Lakes.","Data source:",unique(KCOL.stg.dbkeys2$Source))
+
+test=KCOL.stg.dbkeys2[,c("lake.lab","STATION","DBKEY")]|>flextable()|>merge_v("lake.lab")
+
+KCOL.stg.dbkeys2[,c("lake.lab","STATION","DBKEY")]|>
+  flextable()|>
+  align(j=c(2:3),align="center",part="all")|>
+  align(j=1,align="left",part="all")|>
+  hline()|>
+  merge_v("lake.lab")|>
+  valign(j="lake.lab",valign="top")|>
+  set_header_labels("lake.lab"="Lake",
+                    "STATION"="Station")|>
+  width(width=c(2.5,1,1))|>
+  
+  padding(padding=1.25,part="all")|>
+  font(fontname="Arial",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")|>
+  hline_bottom(border=officer::fp_border(width=2))|>
+  fix_border_issues()|>
+  bold(part="header")|>
+  add_header_lines(values=cap.val)|>align(align="center",part="header")|>fontsize(size=13,part="header")
+
+
+
+```

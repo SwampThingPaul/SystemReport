@@ -1,0 +1,21 @@
+---
+title: "Climate Information"
+format:
+  html:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+Information provided by The International Research Institute for Climate and Society, Columbia University Climate School. Source: [https://iri.columbia.edu/ENSO](https://iri.columbia.edu/ENSO) 
+
+```{r, out.width="60%",echo=F,fig.align="center"}
+knitr::include_graphics("https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/figure07.gif")
+```
+
+```{r, out.width="60%",echo=F,fig.align="center"}
+knitr::include_graphics("https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/figure06.gif")
+```
+
+
+[List of Models](https://iri.columbia.edu/our-expertise/climate/enso/enso-prediction-models/)

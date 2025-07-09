@@ -1,0 +1,64 @@
+---
+# title: "Stage Datum"
+format:
+  html:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+execute: 
+  freeze: true
+---
+
+## Conversion between datums
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(flextable)
+
+con.dat=data.frame(Area=c("Lake Alligator", "Lake Gentry", "Lake Myrtle", "Lake Hart", 
+"East Lake Tohopekaliga", "Lake Tohopekaliga", "Lake Cypress", 
+"Lake Hatchineha", "Lake Kissimmee", "Lake Istokpoga", "Lake Okeechobee", 
+"WCA 1", "WCA 2A", "WCA 3A", "Rotenberger", "Holey Land", "St Lucie @ C23 C24 C25"),
+con.val=c(1, 1.1, 1, 1.1, 1, 1.2, 1.2, 1.2, 1.2, 1.2, 1.25, 1.5, 1.5, 
+1.5, 1.45, 1.45, 1.5))
+
+```
+
+
+The South Florida Water Management District (SFWMD) and agency partners is upgrading the reference system used to measure water elevation readings. SFWMD will shift from reporting water elevation readings in the National Geodetic Vertical Datum of 1929 (NGVD 29) to the North American Vertical Datum of 1988 (NAVD 88).
+
+Below are values for waterbodies across the Greater Everglades Ecosystem. 
+
+```{r ,echo=FALSE,message=FALSE,warning=FALSE}
+con.dat|>
+  flextable()|>
+  align(j=2,align="center",part="all")|>
+  padding(padding=1,part="all")|>
+  bold(part="header")|>
+  set_header_labels("Area"="Region",
+                    "con.val"="Conversion\nValue\n (Feet)")|>
+  # autofit()|>
+  width(width=c(2,1))|>
+  footnote(j=2,value=as_paragraph(" NGVD29 to NAVD88 conversion value as reported by USACE and SFWMD"),ref_symbols =c(" 1"),part="header")|>
+  font(fontname="Arial",part="all")|>
+  # font(fontname="Times New Roman",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")
+```
+
+
+
+### To convert to NAVD88
+$$ NGVD29 - Conversion\;Value = NAVD88 $$
+
+For instance on 2007-01-16, gage height was reported as 8.63 ft NGVD29. The hypothetical conversion factor is 1.66. Therefore to convert to NAVD88 it would look like $8.63\;ft\;NGVD29 - 1.66 = 6.97\;ft\;NAVD88$.
+
+### To convert to NAVD29
+$$ NAVD88 + Conversion\;Value = NGVD29 $$
+
+For instance on 2007-01-16, gage height was reported as 10.22 ft NAVD88. The hypothetical conversion factor is 1.42. Therefore to convert to NGVD29 it would look like $10.22\;ft\;NAVD88 + 1.42 = 11.64\;ft\;NGVD29$. 
+
+Additional information regarding datum conversions can be found at the [USGS EDEN](https://sofia.usgs.gov/eden/explanation.php#convertgage:~:text=%3A%20Eduardo%20Patino-,Datum,-Information%3A) page.
+
+For site specific conversion factors there are tools to convert between NGVD29 and NAVD88 like [VERTCON](https://geodesy.noaa.gov/TOOLS/Vertcon/vertcon.html).
+
+<!-- https://github.com/flott/vertcon-web -->

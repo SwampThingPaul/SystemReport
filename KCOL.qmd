@@ -1,0 +1,617 @@
+---
+title: "Kissimmee Chain of Lakes"
+format:
+  html:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r date,echo=FALSE,message=FALSE,warning=FALSE}
+up.date <- format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
+up.date <- as.POSIXct(up.date,tz="America/New_York")
+
+dst.check <- c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
+knitr::opts_chunk$set(echo=FALSE,
+                      message=FALSE,
+                      warning=FALSE,
+                      fig.path="_site/images/",
+                      dpi=200)
+```
+
+`r paste("Updated:",up.date, ifelse(dst.check==T,"EDT","EST"))`
+
+------------------------------------------------------------------------
+
+```{r setup and data}
+library(AnalystHelper)
+library(plyr)
+library(reshape2)
+library(sf)
+library(EVERSpatDat)
+library(mapmisc)
+library(flextable)
+library(tmap)
+
+# Database 
+library(DBI)
+library(RSQLite)
+
+utm17<-st_crs("EPSG:26917");# CRS for NAD83 UTM17
+
+tmap_mode("view")
+
+con <- dbConnect(RSQLite::SQLite(), "data/stage_data.sqlite")
+tables <- dbListTables(con)
+
+# Functions  ----------------------------------------------------------------
+sch_ts_fun <- function(x, yrs = c(-3, -2, -1, 0, 1), CurWY, date.fill) {
+  # Generate all shifted dates up front
+  tmp.ts <- do.call(rbind, lapply(yrs, function(y) {
+    tmp <- x
+    tmp$date <- date.fun(paste(CurWY + y, tmp$month, tmp$day, sep = "-"))
+    tmp
+  }))
+  
+  # Merge with date.fill
+  tmp.ts <- merge(tmp.ts, date.fill, by = "date", all.y = TRUE)
+  
+  # Interpolate each zone column (assuming the first 3 columns are date, lake, month/day)
+  zone.cols <- setdiff(names(tmp.ts), c("date", "lake", "month", "day"))
+  tmp.ts[zone.cols] <- lapply(tmp.ts[zone.cols], dat.interp)
+  
+  # Fill lake column with unique non-NA value
+  tmp.ts$lake <- unique(tmp.ts$lake[!is.na(tmp.ts$lake)])[1]
+  
+  # Drop month and day columns
+  tmp.ts <- tmp.ts[ , !(names(tmp.ts) %in% c("month", "day"))]
+  
+  # add DOWY and WY
+  tmp.ts$DOWY <- hydro.day(tmp.ts$date)
+  tmp.ts$WY <- WY(tmp.ts$date)
+  
+  return(tmp.ts)
+}
+
+adj_lake_schedule <- function(lake, data, lake_labs) {
+  df <- data.frame(
+    month = data$month,
+    day = data$day,
+    ZoneA = data$ZoneA,
+    lake = lake,
+    stringsAsFactors = FALSE
+  )
+  
+  # Find index of lake
+  idx <- match(lake, lake_labs$lake)
+  
+  # If lake is not found, warn and set default
+  if (is.na(idx)) {
+    warning(sprintf("Lake '%s' not found in lake_labs. Using stg.con.val = 0.", lake))
+    val <- 0
+  } else {
+    val <- lake_labs$stg.con.val[idx]
+  }
+  
+  # Adjust values
+  df$ZoneA <- df$ZoneA + val
+  
+  if (!is.null(data$drawdown)) {
+    df$drawdown <- data$drawdown + val
+  }
+  
+  if (!is.null(data$ConstDev)) {
+    df$ConstDev <- data$ConstDev + val
+  }
+  
+  return(df)
+}
+process_lake <- function(lake_name, stg_data, schedule_data, station_cols) {
+  df <- reshape2::dcast(subset(stg_data, lake == lake_name),
+                        Date.EST + CY + DOWY + WY ~ STATION.alias,
+                        value.var = "Data.Value",
+                        fun.aggregate = mean)
+  
+  # Add recession calculations
+  for (col in station_cols) {
+    df[[paste0("recess_7day.", col)]] <- c(rep(NA, 7), diff(df[[col]], lag = 7))
+    df[[paste0("recess_30day.", col)]] <- c(rep(NA, 30), diff(df[[col]], lag = 30))
+  }
+  
+  # Merge with schedule
+  schedule_data <- schedule_data[[lake_name]]
+  df <- merge(df, schedule_data[, c("date", "ZoneA")], 
+              by.x = c("Date.EST"), 
+              by.y = c("date"), 
+              all.x = TRUE)
+  
+  # Calculate schedule difference
+  for (col in station_cols) {
+    df[[paste0("sch_diff.", col)]] <- df[[col]] - df$ZoneA
+  }
+  
+  return(df)
+}
+
+
+stg.lab.fun <- function(data, site, YEST, lab.y = NULL, day.offset, fact = 0.98) {
+  tmp.dat <- subset(data, Date.EST == YEST)
+  
+  # Check for missing or empty data early
+  if (nrow(tmp.dat) == 0 || is.na(tmp.dat[[site]])) return(NA)
+  
+  yval <- tmp.dat[[site]]
+  dowy <- tmp.dat[["DOWY"]]
+  
+  if (is.null(lab.y)) lab.y <- yval * fact
+  
+  # Plot point
+  points(dowy, yval, pch = 21, bg = adjustcolor("black", 0.5), col = "black", lwd = 0.1, cex = 1.25)
+  
+  # Position for segment and label
+  x.offset <- if (dowy > 300) -day.offset else if (dowy < 30) day.offset else 0
+  x.label <- dowy + x.offset
+  
+  # Add segment and label
+  segments(dowy, yval, x.label, lab.y, lty = 2)
+  text(x.label, lab.y,
+       paste0(format(round(yval, 2), nsmall = 2), " Ft\nNGVD29"),
+       cex = 0.8, xpd = NA, pos = 1, offset = -0.1)
+}
+
+
+# GIS data ----------------------------------------------------------------
+data(lakes)
+data(canals)
+
+vars=c("LAKE HART","LAKE MARY JANE","EAST LAKE TOHOPEKALIGA","LAKE TOHOPEKALIGA",
+       "CYPRESS LAKE","LAKE HATCHINEHA","LAKE MYRTLE","LAKE PRESTON","LAKE JOEL",
+       "TROUT LAKE","COON LAKE","LAKE CENTER","LAKE LIZZIE","ALLIGATOR LAKE",
+       "LAKE GENTRY","LAKE KISSIMMEE")
+# unique(lakes$NAME)[match(vars,unique(lakes$NAME))]
+KCOL = subset(lakes,NAME%in%vars)
+
+KCOL$NAME.lc=gsub("([\\w])([\\w]+)", "\\U\\1\\L\\2", KCOL$NAME, perl = TRUE)
+lake.xwalk=data.frame(NAME=c("LAKE HART","LAKE MARY JANE","EAST LAKE TOHOPEKALIGA","LAKE TOHOPEKALIGA",
+                             "CYPRESS LAKE","LAKE HATCHINEHA","LAKE MYRTLE","LAKE PRESTON","LAKE JOEL",
+                             "TROUT LAKE","COON LAKE","LAKE CENTER","LAKE LIZZIE","ALLIGATOR LAKE",
+                             "LAKE GENTRY","LAKE KISSIMMEE"),
+                      lake.lab=c(rep("Lakes Hart, Mary Jane",2),"East Lake Tohopekaliga","Lake Tohopekaliga",
+                                 "Cypress Lake","Lake Hatchineha",rep("Lake Myrtle, Preston, Joel",3),
+                                 rep("Lakes Trout, Coon, Center, Lizzie, Alligator",5),"Lake Gentry","Lake Kissimmee"))
+
+# -------------------------------------------------------------------------
+CurWY=WY(date.fun(Sys.time()))
+
+Start.Date=date.fun(paste(CurWY-4,05,01,sep="-"))
+End.Date=date.fun(Sys.time())
+
+YEST=date.fun(End.Date-1)
+dates=seq(date.fun(Sys.Date()-13),date.fun(Sys.Date()),"1 days")
+dates1=c(date.fun(paste(CurWY-4,05,01,sep="-")),date.fun(Sys.time()))
+
+# DBHYDRO -----------------------------------------------------------------
+#all data in NGVD29
+
+lake.labs <- data.frame(lake=c("HART", "ETOHO", "TOHO", "CYPR", "HATCH", "MYRT", "ALLI", "GENT", "KISS"),
+                        lake.lab=c("Lakes Hart, Mary Jane","East Lake Tohopekaliga","Lake Tohopekaliga",
+                                   "Cypress Lake","Lake Hatchineha","Lake Myrtle, Preston, Joel",
+                                   "Lakes Trout, Coon, Center, Lizzie, Alligator","Lake Gentry","Lake Kissimmee"),
+                        stg.con.val=c(1.10,1.00,1.20,1.20,1.20,1.00,1.00,1.10,1.20))
+lake.labs1 <- lake.labs
+# lake.labs2 <- merge(lake.labs,lake.xwalk,"lake.lab")
+## 
+
+KCOL.stg.dbkeys_list <- list()
+
+KCOL.stg.dbkeys_list[[1]] <- data.frame(STATION.alias=c("S62_H","LKMJ"),
+                                   DBKEY=c("WN219","16239"),lake="HART")
+KCOL.stg.dbkeys_list[[2]] <- data.frame(STATION.alias=c("S59_H","TOHOEE"),
+                            DBKEY=c("WN265","V7583"),lake="ETOHO")
+KCOL.stg.dbkeys_list[[3]] <- data.frame(STATION.alias=c("S61_H","TOHOW"),
+                           DBKEY=c("WN255","LQ978"),lake="TOHO")
+KCOL.stg.dbkeys_list[[4]] <- data.frame(STATION.alias=c("LCYP19R"),
+                           DBKEY=c("88301"),lake="CYPR")
+KCOL.stg.dbkeys_list[[5]] <- data.frame(STATION.alias=c("LHATCH3"),
+                            DBKEY=c("T0937"),lake="HATCH")
+KCOL.stg.dbkeys_list[[6]] <- data.frame(STATION.alias=c("S57_H"),
+                           DBKEY=c("WN239"),lake="MYRT")
+KCOL.stg.dbkeys_list[[7]] <- data.frame(STATION.alias=c("S58_H","LLZZ","ALLI"),
+                           DBKEY=c("15529","FZ584","FZ586"),lake="ALLI")
+KCOL.stg.dbkeys_list[[8]] <- data.frame(STATION.alias=c("S63_H","LKGT"),
+                           DBKEY=c("WN328","DO539"),lake="GENT")
+KCOL.stg.dbkeys_list[[9]] <- data.frame(STATION.alias=c("S65_H","LKISS"),
+                           DBKEY=c("WN313","AN593"),lake="KISS")
+KCOL.stg.dbkeys <- do.call(rbind,KCOL.stg.dbkeys_list)|>
+  mutate(region <- "KCOL")|>
+  merge(lake.labs,"lake")
+
+# dbWriteTable(con, "stage_dbkeys", KCOL.stg.dbkeys, overwrite = TRUE,append = FALSE)  # Use append = TRUE to add rows
+
+tables <- dbListTables(con)
+
+max_date <- dbGetQuery(con,"SELECT MAX(Date) AS max_date FROM KCOL")
+max_date <- date.fun(as.POSIXct(max_date$max_date,origin="1970-01-01",tz="America/New_York"))
+if(max_date!=YEST){
+  KCOL_stg_list <- lapply(KCOL.stg.dbkeys$DBKEY, function(dbkey) {
+    # Attempt to retrieve data and handle errors
+    tryCatch({
+      tmp <- DBHYDRO_daily(dates1[1],dates1[2], dbkey)
+      tmp$DBKEY <- as.character(dbkey)
+      #setTxtProgressBar(pb, i)
+      tmp
+    }, error = function(e) {
+      message(sprintf("Skipping DBKEY %s due to error: %s", dbkey, e$message))
+      NULL  # Return NULL if there's an error
+    })
+  })
+  
+  KCOL_stg_list <- Filter(Negate(is.null), KCOL_stg_list)
+  stg.da <- do.call(rbind, KCOL_stg_list)|>
+    merge(KCOL.stg.dbkeys,"DBKEY")|>
+    mutate(
+      Date.EST = date.fun(Date),
+      WY = WY(Date),
+      month = as.numeric(format(Date,"%m")),
+      CY = as.numeric(format(Date,"%Y")),
+      DOWY = hydro.day(Date),
+      date.downloaded = as.character(Sys.Date()))
+  
+  dbWriteTable(con, "KCOL",stg.da, overwrite = TRUE)  # Use append = TRUE to add rows
+}else{
+  stg.da <- dbReadTable(con, "KCOL")
+  stg.da <- stg.da|>
+    mutate(
+      Date.EST = date.fun(as.POSIXct(Date.EST,origin="1970-01-01",tz="America/New_York"))
+    )
+}
+
+
+# Schedules ---------------------------------------------------------------
+lake_schedule_data <- list()
+lake_schedule_data[[1]] <- data.frame(month=c(1, 2, 3, 6, 6, 9, 11, 12),
+                                      day=c(1, 11, 15, 1, 2, 1, 1, 31),
+                                      ZoneA=c(59.9, 59.9, 59.9, 58.4, 58.9, 58.9, 59.9, 59.9),
+                                      drawdown=c(59.9, 59.9, NA, 58.4, 58.9, 58.9, 59.9, 59.9),
+                                      lake="HART")
+lake_schedule_data[[2]] <- data.frame(month = c(1, 3, 6, 6, 9,10, 11, 12),
+                     day = c(1, 15, 1, 2, 1, 1, 1, 31),
+                     ZoneA = c(57, 57, 54.0, 55.5, 55.5, 56.0, 57, 57),
+                     lake = "ETOHO")
+lake_schedule_data[[3]] <- data.frame(month = c(1, 3, 6, 6, 9,10, 11, 12),
+                    day = c(1, 15, 1, 2, 1, 1, 1, 31),
+                    ZoneA = c(53.8, 53.8, 50.8, 52.3, 52.3, 52.8, 53.8, 53.8),
+                    lake = "TOHO")
+lake_schedule_data[[4]] <- data.frame(month = c(1,2,3,4,6,6,9,10,11,12),
+                    day =  c(1,1,1,1,1,2,1, 1, 1,31),
+                    ZoneA = c(51.3,51.3,49.8,49.8,47.8,49.8,49.8,50.30,51.3,51.3),
+                    lake = "CYPR")
+lake_schedule_data[[5]] <- data.frame(month = c(1,2,3,4,6,6,9,10,11,12),
+                     day =  c(1,1,1,1,1,2,1, 1, 1,31),
+                     ZoneA = c(51.3,51.3,49.8,49.8,47.8,49.8,49.8,50.30,51.3,51.3),
+                     lake = "HATCH")
+lake_schedule_data[[6]] <- data.frame(month = c(1,6,6,10,11,12),
+                    day = c(1,1,2, 1, 1,1),
+                    ZoneA = c(60.66,59,60,60,61,61),
+                    lake = "MYRT")
+lake_schedule_data[[7]] <- data.frame(month = c(1, 3, 5,6,10,11,12),
+                    day = c(1,15,31,1, 1, 1,1),
+                    ZoneA = c(63,63,61,62.2,62.2,63,63),
+                    lake = "ALLI")
+lake_schedule_data[[8]] <- data.frame(month = c(1, 3, 6,6,10,11,12),
+                    day = c(1,15,1,2, 1, 1,1),
+                    ZoneA = c(60.4,60.4,58.4,59.9,59.9,60.4,60.4),
+                    lake = "GENT")
+lake_schedule_data[[9]] <- data.frame(month = c(1,2,3,4,6,6,9,10,11,12),
+                    day = c(1,1,1,1,1,2,1, 1, 1,1),
+                    ZoneA = c(51.3,51.3,49.8,49.8,47.8,49.8,49.8,50.3,51.3,51.3),
+                    ConstDev = c(51.3,51.3,NA,NA,NA,49.8,49.8,50.3,51.3,51.3),
+                    lake = "KISS")
+
+
+CurWY
+fill <- data.frame(date=seq(date.fun(paste(CurWY-4,"01-01",sep="-")),date.fun(paste(CurWY+1,"04-30",sep="-")),"1 days"))
+lake_schedules <- lapply(lake_schedule_data, function(df) {
+  lk <- unique(df$lake)
+  df <- adj_lake_schedule(lk, df, lake.labs)
+  
+  sch <- sch_ts_fun(df,yrs=c(-4,-3,-2,-1,0,1),CurWY=CurWY,date.fill=fill)
+  sch
+})
+names(lake_schedules) <- sapply(lake_schedule_data, function(df) unique(df$lake))
+
+lake_meta <- list(
+  HART = list(stations = "LKMJ"),#, schedule = HART.sch),
+  ETOHO = list(stations = "TOHOEE"),#, schedule = ETOHO.sch),
+  TOHO = list(stations = "TOHOW"),#, schedule = TOHO.sch),
+  CYPR = list(stations = "LCYP19R"),#, schedule = CYPR.sch),
+  HATCH = list(stations = "LHATCH3"),#, schedule = HATCH.sch),
+  MYRT = list(stations = "S57_H"),#, schedule = MYRT.sch),
+  ALLI = list(stations = c("ALLI", "LLZZ")),#, schedule = ALLI.sch),
+  GENT = list(stations = "LKGT"),#, schedule = GENT.sch),
+  KISS = list(stations = "LKISS")#, schedule = KISS.sch)
+)
+
+lake_xtabs <- lapply(names(lake_meta), function(lk) {
+  meta <- lake_meta[[lk]]
+  process_lake(lk, stg_data = stg.da, schedule_data = lake_schedules, station_cols = meta$stations)
+})
+names(lake_xtabs) <- sapply(lake_schedule_data, function(df) unique(df$lake))
+
+
+```
+
+
+```{r stoplight table,echo=F}
+
+stop.light <- do.call(rbind, lapply(lake.labs$lake, function(val) {
+  lake_data <- lake_xtabs[[val]]
+  
+  # Determine the correct sch_diff column
+  diff_col <- if (val == "ALLI"){"sch_diff.ALLI"}else{names(lake_data)[grepl("sch_diff",names(lake_data))]}
+  
+  # Subset and rename
+  tmp <- subset(lake_data, Date.EST == YEST)[, c("Date.EST", diff_col), drop = FALSE]
+  if(nrow(tmp)==0){tmp <- data.frame(Date.EST = YEST,sch_diff = NA)}
+  names(tmp) <- c("Date.EST", "sch_diff")
+  tmp$lake <- val
+  return(tmp[, c("Date.EST", "lake", "sch_diff")])
+  
+}))
+
+# Merge labels
+stop.light <- merge(stop.light, lake.labs[, c("lake", "lake.lab")], by = "lake", sort = FALSE)
+
+bks=c(-10,-1,-0.5,-0.1,0,0.1,0.5,1,10)
+sym.val=c("dwn_red","dwn_yel","dwn_grn","circle_gn","circle_gn","up_grn","up_yel","up_red")
+
+stop.light$symbol=with(stop.light,ifelse(is.na(sch_diff)==T,"./images/nodata.png",
+                                         paste0("./images/",sym.val[findInterval(sch_diff,bks)],".png")))
+cap.val="Lake stage relative to Zone A of the regulation schedule for the Kissimmee Chain of Lakes"
+
+stop.light[,c("Date.EST","lake.lab","sch_diff","symbol")]|>
+  flextable()|>
+  align(j=c(1,3:4),align="center",part="all")|>
+  align(j=2,align="left",part="all")|>
+  colformat_datetime(j=1,fmt_date="%m-%d")|>
+  colformat_image(j = "symbol", width = 0.33, height = 0.33,na_str="---")|>
+  colformat_double(j="sch_diff",digits=2,na_str="---")|>
+  merge_v("Date.EST")|>
+  valign(j="Date.EST",valign="top")|>
+  set_header_labels("Date.EST"="Date\n(Month-Day)",
+                    "lake.lab"="Lake",
+                    "sch_diff"="\u0394(Stage, Sch.)",
+                    "symbol"="\u0394(Stage, Sch.)")|>
+  merge_h(part="header")|>
+  align(j=3:4,align="center",part="header")|>
+  width(width=c(1.25,3.5,1,0.25))|>
+  padding(padding=1,part="all")|>
+  font(fontname="Times New Roman",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")|>
+  fix_border_issues()|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[8],".png"),0.165,0.165)," > 1.0 ft"),ref_symbols =c(" "),part="header",inline=T)|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[7],".png"),0.165,0.165)," 1.0 \u2012 0.5 ft"),ref_symbols =c(" "),part="header",inline=T)|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[6],".png"),0.165,0.165)," 0.5 \u2012 0.1 ft"),ref_symbols =c(" "),part="header",inline=T)|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[5],".png"),0.165,0.165)," 0.1 \u2012 -0.1 ft"),ref_symbols =c(" "),part="header")|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[3],".png"),0.165,0.165)," -0.1 \u2012 -0.5 ft"),ref_symbols =c(" "),part="header")|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[2],".png"),0.165,0.165)," -0.5 \u2012 -1.0 ft"),ref_symbols =c(" "),part="header",inline=T)|>
+  footnote(j="symbol",value=as_paragraph(as_image(paste0("./images/",sym.val[1],".png"),0.165,0.165)," < -1.0 ft"),ref_symbols =c(" "),part="header",inline=T)|>
+  add_header_lines(values=cap.val)%>%align(align="center",part="header")%>%fontsize(size=13,part="header")
+
+```
+
+
+## Overview interactive map
+```{r overview Map,echo=FALSE,message=FALSE,warning=FALSE,out.width="100%",fig.align='center',dpi=96}
+tm_basemap(leaflet::providers$Esri.WorldImagery,alpha=0.75)+
+  tm_shape(KCOL)+tm_polygons(col="lightblue",border.col="lightcyan",alpha=0.5,interactive=F)+
+  tm_shape(KCOL)+tm_text("NAME.lc",col="black",size=1.25,fontface="bold")+
+  # tm_shape(st_crop(canals,st_buffer(KCOL,5000)))+tm_lines("blue",size=2)
+  tm_shape(canals)+tm_lines("dodgerblue",lwd=2)
+  
+```
+
+# Water level
+```{r functions,echo = F, include = F}
+heck_nice <- function(x,round){
+  e <- floor(log10(x))
+  f <- x/(10^e)
+  if (round) {
+    if (f < 1.5) 
+      nf <- 1
+    else if (f < 3) 
+      nf <- 2
+    else if (f < 7) 
+      nf <- 5
+    else nf <- 10
+  }
+  else {
+    if (f <= 1) 
+      nf <- 1
+    else if (f <= 2) 
+      nf <- 2
+    else if (f <= 5) 
+      nf <- 5
+    else nf <- 10
+  }
+  nf * (10^e)
+}
+heckbert_labs <- function(dmin,dmax,m){
+  range <- heck_nice((dmax - dmin), FALSE)
+  lstep <- heck_nice(range/(m - 1), TRUE)
+  lmin <- floor(dmin/lstep) * lstep
+  lmax <- ceiling(dmax/lstep) * lstep
+  seq(lmin, lmax, by = lstep)
+}
+
+plot_lake_stage <- function(
+    lake.val, 
+    lake_xtabs, 
+    lake_schedules, 
+    lake_meta, 
+    lake_labs, 
+    date_label = Sys.Date() - 1
+) {
+  
+  # lake.val = "CYPR"
+  xtab <- lake_xtabs[[lake.val]]
+  sch <- lake_schedules[[lake.val]]
+  meta <- lake_meta[[lake.val]]$stations
+  lake_lab <- subset(lake.labs, lake==lake.val)$lake.lab
+  WL.con <- subset(lake.labs, lake%in%lake.val)$stg.con.val
+  
+  ylim.val <- range(xtab[,c(meta,"ZoneA")],na.rm=T)# c(58, 62)
+  # by.y <- 1
+  ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],5)# seq(ylim.val[1], ylim.val[2], by.y)
+  ymin <- ymaj+diff(ymaj)[1]/2
+  ylim.val <- range(ymaj)
+  
+  # xlim.vals <- date.fun(c(date_label - (358 * 86400), date_label + (7 * 86400)))
+  xlim.vals <- date.fun(c(date_label - (365), date_label + (7)))
+  xmaj <- seq(xlim.vals[1], xlim.vals[2], by = "90 days")
+  xmin <- seq(xlim.vals[1], xlim.vals[2], by = "15 days")
+  
+  stations <- meta# $stations
+  sch.zones <- setdiff(names(sch), c("date", "lake", "DOWY", "WY"))
+  
+  # Optional: Start plotting to PNG
+  # if (!is.null(plot.path)) {
+  #   png(filename = file.path(plot.path, paste0("Lake_", lake, "_Example.png")),
+  #       width = 7.5, height = 5, units = "in", res = 200, type = "windows", bg = "white")
+  #   on.exit(dev.off())
+  # }
+  
+  # Main stage plot
+  plot(ZoneA ~ DOWY, sch, ylim = ylim.val, xlim = xlim.vals, type = "n", ann = FALSE, axes = FALSE)
+  abline(h = ymaj, v = xmaj, lwd = 1, col = "grey", lty = 3)
+  
+  for (j in seq_along(sch.zones)) {
+    lines(sch$date, sch[[sch.zones[j]]], lty = c(1, 2)[j])
+  }
+  for (j in seq_along(stations)) {
+    lines(xtab$Date.EST, xtab[[stations[j]]], lwd = 1.5, col = c("red", "blue")[j], lty = c(1, 2)[j])
+  }
+  
+  axis_fun(1, xmaj, xmin, format(xmaj, "%m-%d-%Y"), line = -0.5)
+  axis_fun(2, ymaj, ymin, ymaj)
+  box(lwd = 1)
+  mtext(side = 1, "Date", line = 1.5, cex = 1)
+  mtext(side = 2, "Stage (Ft, NGVD29)", line = 2, cex = 1)
+  mtext(side = 3, adj = 0, lake_lab, line = 1)
+  mtext(side = 3, adj = 0, paste("Date:", format(date.fun(date_label), "%b %d, %Y")), cex = 0.8)
+  mtext(side = 3, adj = 1, "Data are provisional and subject to change", col = "red")
+  
+  # Right axis (NAVD88)
+  axis_fun(4, ymaj + WL.con, ymin + WL.con, ymaj)
+  mtext(side = 4, "Stage (Ft, NAVD88)", line = 2, cex = 1)
+  
+  legend("topright",
+         legend = stations,
+         col = c("red", "blue"),
+         lty = c(1, 2), lwd = 1,
+         ncol = 1, cex = 1, bty = "n", y.intersp = 1, x.intersp = 0.5, xpd = NA, xjust = 0.5)
+}
+
+plot_WY_lake_stage<- function(
+    lake.val, 
+    lake_xtabs, 
+    lake_schedules, 
+    lake_meta, 
+    lake_labs, 
+    CurWY = CurWY)
+{
+  lake.val <- "ALLI"
+  xtab <- lake_xtabs[[lake.val]]
+  sch <- lake_schedules[[lake.val]]
+  meta <- lake_meta[[lake.val]]$stations
+  lake_lab <- subset(lake.labs, lake==lake.val)$lake.lab
+  WL.con <- min(subset(lake.labs, lake%in%lake.val)$stg.con.val)
+  
+  sch.WY <- subset(sch,WY==CurWY)
+  ylim.val <- range(xtab[,c(meta,"ZoneA")],na.rm=T)
+  ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],4)
+  ymin <- ymaj+diff(ymaj)[1]/2
+  ylim.val <- range(ymaj)
+  
+  xlim.vals <- date.fun(c(paste(CurWY-1,05,01,sep="-"),paste(CurWY,04,30,sep="-")))
+  xmaj <- seq(xlim.vals[1],xlim.vals[2],by="2 months");
+  xmin <- seq(xlim.vals[1],xlim.vals[2],by="1 months")
+  xlim.vals2 <- hydro.day(xlim.vals)
+  
+  stations <- meta# $stations
+  sch.zones <- setdiff(names(sch), c("date", "lake", "DOWY", "WY"))
+  
+  # Main stage plot
+  plot(ZoneA ~ DOWY, sch.WY, ylim = ylim.val, xlim = xlim.vals2, type = "n", ann = FALSE, axes = FALSE,xaxs="i")
+  abline(h = ymaj, v = hydro.day(xmaj), lwd = 1, col = "grey", lty = 3)
+  WYs <- CurWY - c(2,1,0)
+  ln.cols <- c(adjustcolor(c("forestgreen","blue"),0.5),"red")
+  
+  for (j in seq_along(sch.zones)) {
+    lines(subset(sch,WY==CurWY)$DOWY, subset(sch,WY==CurWY)[[sch.zones[j]]], lty = c(1, 2)[j])
+  }
+  for (j in seq_along(WYs)){
+    tmp <- subset(xtab,WY==WYs[j])
+    lines(tmp$DOWY, tmp[[stations[1]]], lwd = 1.5, col = ln.cols[j], lty = 1)
+  }
+  # stg.lab.fun(data=xtab,stations[1],YEST,ylim.val[1]*1.1,30)
+  
+  axis_fun(1, hydro.day(xmaj), hydro.day(xmin), format(xmaj,"%b"), line = -0.5)
+  axis_fun(2, ymaj, ymin, ymaj)
+  box(lwd = 1)
+  mtext(side = 1, "Month", line = 1.5, cex = 1)
+  mtext(side = 2, "Stage (Ft, NGVD29)", line = 2, cex = 1)
+  mtext(side = 3, adj = 0, paste("Site:",stations[1]))
+  
+  # Right axis (NAVD88)
+  axis_fun(4, ymaj + WL.con, ymin + WL.con, ymaj)
+  mtext(side = 4, "Stage (Ft, NAVD88)", line = 2, cex = 1)
+  
+  legend("topright",
+         legend = c(WYs,sch.zones),
+         col = c(ln.cols,rep("black",length(sch.zones))),
+         lty = c(rep(1,3), c(1, 2)[1:length(sch.zones)]), lwd = c(rep(2,3),1,1),
+         ncol = if(length(sch.zones)>1){2}else{1}, cex = 1, bty = "n", y.intersp = 1, x.intersp = 0.5, xpd = NA, xjust = 0.5)
+}
+
+
+lake.labs <- merge(lake.labs,lake.xwalk,"lake.lab")
+
+
+```
+
+
+```{r render_all_lakes, echo=FALSE, results='asis'}
+# List of lakes and labels
+lake_list2 <- list(
+  list(lake = "HART" , lake_label = "Lakes Hart, Mary Jane"),
+  list(lake = "ETOHO", lake_label = "East Lake Tohopekaliga"),
+  list(lake = "TOHO", lake_label = "Lake Tohopekaliga"),
+  list(lake = "CYPR", lake_label = "Cypress Lake"),
+  list(lake = "HATCH", lake_label = "Lake Hatchineha"),
+  list(lake = "MYRT", lake_label = "Lake Myrtle, Preston, Joel"),
+  list(lake = "ALLI", lake_label = "Lakes Trout, Coon, Center, Lizzie, Alligator"),
+  list(lake = "GENT", lake_label = "Lake Gentry"),
+  list(lake = "KISS", lake_label = "Lake Kissimmee")
+)
+
+```
+
+::: {.panel-tabset}
+## Lakes
+
+```{r}
+# for (params in lake_list2) {
+#   cat(knitr::knit_child("lake_section.qmd", envir = list2env(params), quiet = TRUE))
+# }
+for (lake in lake_list2) {
+  lake.val <- lake$lake
+  lake_label <- lake$lake_label
+  cat(knitr::knit_child("lake_section.qmd", envir = environment(), quiet = TRUE))
+}
+
+```
+
+
+***

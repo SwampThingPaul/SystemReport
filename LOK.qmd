@@ -1,0 +1,980 @@
+---
+title: "Lake Okeechobee"
+format:
+  html:
+    toc: true
+    dev: png
+    type: cairo
+encoding: UTF-8
+knitr:
+  opts_chunk:
+    echo: false
+    message: false
+    warning: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r date,echo=FALSE,message=FALSE,warning=FALSE}
+up.date=format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
+up.date=as.POSIXct(up.date,tz="America/New_York")
+
+dst.check=c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
+# knitr::opts_chunk$set(echo=FALSE,
+#                       message=FALSE,
+#                       warning=FALSE,
+#                       fig.path="_site/images/",
+#                       dpi=200)
+```
+
+`r paste("Updated:",up.date, ifelse(dst.check==T,"EDT","EST"))`
+
+```{r setup and data}
+
+library(AnalystHelper)
+library(reshape2)
+library(plyr)
+library(sf)
+library(EVERSpatDat)
+library(mapmisc)
+library(flextable)
+library(tmap)
+
+utm17<-st_crs("EPSG:26917");# CRS for NAD83 UTM17
+
+tmap_mode("view")
+# Functions  ----------------------------------------------------------------
+ci.reverse.scaling.fun=function(DN){
+  10^(3.0 / 250.0 * DN - 4.2)
+}
+ci.scaling.fun=function(ci){
+  round(83.3 * (log10(ci[ci>0]) + 4.2))
+}
+decdate.fun=function(date){
+  Y=as.numeric(format(date,"%Y"))
+  start=date.fun(paste(Y,1,1,sep="-"))
+  end=date.fun(paste(Y+1,1,1,sep="-"))
+  sofar <- as.numeric(difftime(date, start, units = "secs"))
+  total <- as.numeric(difftime(end, start, units = "secs"))
+  Y + sofar / total
+}
+
+sec.to.day=function(x) x/86400 # 60 (sec/min) * 60 (min/hr) * 24 (hr/day)
+days.to.sec = function(x) x*86400
+source("src/windrose_fun.R")
+# source(C:/Julian_LaCie/_GitHub/SystemReport/src/windrose_fun.R")
+# -------------------------------------------------------------------------
+CurWY=WY(date.fun(Sys.time()))
+
+Start.Date=date.fun(paste(CurWY-4,05,01,sep="-"))
+End.Date=date.fun(Sys.time())
+
+YEST=date.fun(End.Date-1)
+# dates=seq(date.fun(Sys.Date()-13),date.fun(Sys.Date()),"1 days")
+# dates1=c(date.fun(paste(CurWY-4,05,01,sep="-")),date.fun(Sys.time()))
+
+# Data -----------------------------------------------------------------
+dates=c(Start.Date,End.Date)
+
+## Lake Okeechobee ---------------------------------------------------------
+## DSS file
+# https://w3.saj.usace.army.mil/h2o/dss.htm
+# "https://w3.saj.usace.army.mil/h2o/dss/tables.dss" ;# has breakpoints for schedules
+
+### USACE LOK Stage
+data.clean.fun = function(line) {
+      split_line <- unlist(strsplit(line, "\\| "))
+      split_line <- trimws(split_line)
+      split_line[split_line == ""] <- NA  # Replace empty strings with NA)
+      return(split_line)
+}
+
+USACE_LOK_STAGE = function(link.val){
+# link.val="https://w3.saj.usace.army.mil/h2o/reports/r-oke365.html"
+  suppressWarnings({
+    lines <- readLines(link.val)|>
+    strsplit("\n")|>unlist()
+  
+    # Identify and clean the header and data lines
+    header_line <- max(grep("JAN", lines))
+    data_lines <- grep("^[0-9]", lines)
+    
+    ## Extract the header and data
+    header <- lines[header_line]
+    data <- lines[data_lines]
+    
+    # Clean the header
+    header <- unlist(strsplit(header, "\\|"))
+    header <- trimws(header)
+    header <- header[header != ""]  # Remove empty elements
+    
+    # Clean the data
+    clean_data <- lapply(data, data.clean.fun)
+    
+    # Convert to a data frame
+    df <- do.call(rbind, clean_data) |>
+      as.data.frame(stringsAsFactors = FALSE)
+    
+    colnames(df) <- c("Day",header[2:13])# Assign column names
+    
+    # Convert numeric columns
+    df[,-1] <- lapply(df[,-1], as.numeric)
+    
+    coe.stg = melt(df,id.vars="Day",value.name="coe_LOK",variable.name="month")|>
+      subset(is.na(coe_LOK)==F)|>
+      mutate(Yr=as.numeric(header[1]),
+             Date=date.fun(paste(Yr,month,Day),form="%Y %B %d"))
+  })
+  return(coe.stg)
+}
+# 
+# coe.stg = rbind(
+#   USACE_LOK_STAGE(paste0("https://w3.saj.usace.army.mil/h2o/reports/r-oke365",as.numeric(format(Sys.Date(),"%Y"))-2,".html")),
+#   USACE_LOK_STAGE(paste0("https://w3.saj.usace.army.mil/h2o/reports/r-oke365",as.numeric(format(Sys.Date(),"%Y"))-1,".html")),
+#   USACE_LOK_STAGE("https://w3.saj.usace.army.mil/h2o/reports/r-oke365.html")
+# )
+
+coe.stg=data.frame(Date = YEST,coe_LOK=NA)#,USACE_LOK_STAGE("https://w3.saj.usace.army.mil/h2o/reports/r-oke365.html")
+
+# tmp = "https://w3.saj.usace.army.mil/h2o/reports/r-oke.html"|>
+#   readLines()|>
+#   strsplit("\n")|>
+#   unlist()
+
+# date = tmp[grep("Data Ending", tmp)]|>strsplit("\\s+\\s+")|>sapply("[",2)|>as.Date(format="%d %B %Y")
+# head = tmp[c(grep("L001", tmp))]|>strsplit("\\s+")|>lapply(data.clean.fun)|>unlist()
+# tmp = tmp[grep("L001", tmp)+1]|>
+#   strsplit("\\s+")|>
+#   lapply(data.clean.fun)
+# tmp = do.call(rbind, tmp)|>
+#   as.data.frame(stringsAsFactors = FALSE)
+# colnames(tmp) = head
+# tmp$date = date
+
+### DBHYDRO
+# comp.dbkey=data.frame(DBKEY=c("N3466","06832"),Priority=c("P2","P1"))
+# DBHYDRO.meta.byDBKEY(comp.dbkey$DBKEY)
+# tmp1=DBHYDRO.meta.bysite(site=c("L001","L005","L006","LZ40"),data_type="STG")|>
+#   dcast(STATION~FREQ,value.var="DBKEY",fun.aggregate = function(x) x[1])
+# tmp2=rbind(
+#   DBHYDRO.meta.bysite(station="S133_T",data_type="STG")|>
+#   mutate(END.DATE = date.fun(END.DATE,form = "%d-%B-%Y"))|>
+#   subset(as.numeric(format(END.DATE,"%m"))==as.numeric(format(Sys.Date(),"%m"))&
+#            STAT%in%c("MEAN","INST")),
+#   DBHYDRO.meta.bysite(station="S4_T",data_type="STG")|>
+#   mutate(END.DATE = date.fun(END.DATE,form = "%d-%B-%Y"))|>
+#   subset(as.numeric(format(END.DATE,"%m"))==as.numeric(format(Sys.Date(),"%m"))&
+#            STAT%in%c("MEAN","INST")),
+#   DBHYDRO.meta.bysite(station="S352_H",data_type="STG")|>
+#   mutate(END.DATE = date.fun(END.DATE,form = "%d-%B-%Y"))|>
+#   subset(as.numeric(format(END.DATE,"%m"))==as.numeric(format(Sys.Date(),"%m"))&
+#            STAT%in%c("MEAN","INST")))|>
+#   dcast(STATION~FREQ,value.var="DBKEY",fun.aggregate = function(x) x[1])
+# tmp3=DBHYDRO.meta.bysite(station="S308_H",data_type="STG29")|>
+#   mutate(END.DATE = date.fun(END.DATE,form = "%d-%B-%Y"))|>
+#   subset(as.numeric(format(END.DATE,"%m"))==as.numeric(format(Sys.Date(),"%m")))|>
+#   dcast(STATION~FREQ,value.var="DBKEY",fun.aggregate = function(x) x[1])
+# rbind(tmp1,tmp2,tmp3)|>dput()
+LOK.DBKEYS = data.frame(
+  STATION = c("L001", "L005", "L006", "LZ40", "S133_T","S352_H", "S4_T", "S308_H","LOK2","LOK1"), 
+  BK = c("IX846", "IX865", "IX875", "IY030", "IY368", "IY688", "IY763", "AI522", NA    , NA), 
+  DA = c("16022", "12509", "12519", "16265", "15826", "AP448", "41542", "TA369","N3466","06832")
+  )
+
+## Helpful when building and save a file just incase
+tmp1=read.csv("./data/LOK_stg.csv")
+tmp1$DATE=date.fun(tmp1$DATE)
+if(max(tmp1$DATE)!=YEST){
+  stg.da=data.frame()
+  for(i in 1:nrow(LOK.DBKEYS)){
+    tmp=DBHYDRO_daily(dates[1],dates[2],LOK.DBKEYS$DA[i],dataonly=F)
+    tmp.meta=tmp$METADATA
+    tmp=tmp$REPORT
+    tmp$DBKEY=as.character(LOK.DBKEYS$DA[i])
+    tmp$UNITS=tmp.meta$UNITS
+    stg.da=rbind(stg.da,tmp)
+  }
+  stg.da=merge(stg.da,LOK.DBKEYS[,c("STATION","DA")],by.x="DBKEY",by.y="DA")
+  stg.da$DATE=date.fun(stg.da$Date)
+  write.csv(stg.da,"./data/LOK_stg.csv",row.names=F)
+}else{
+  stg.da=tmp1
+}
+stg.da$Data.Value[stg.da$Data.Value>19]=NA
+
+LakeO.xtab = dcast(stg.da,DATE~STATION,value.var="Data.Value",mean,na.rm=T)|>
+  merge(coe.stg[,c("Date","coe_LOK")],by.x="DATE",by.y="Date",all.x=T)
+
+comp.stations = c("L001", "L005", "L006", "LZ40", "S133_T", "S352_H", "S4_T", "S308_H")
+LakeO.xtab=LakeO.xtab[,c("DATE",comp.stations,"LOK1","LOK2","coe_LOK")]
+LakeO.xtab$comp.STG = apply(LakeO.xtab[,comp.stations],1,FUN = function(x) round(mean(x,na.rm=T),2))
+LakeO.xtab$STG.sd = apply(LakeO.xtab[,comp.stations],1,sd,na.rm=T)
+LakeO.xtab$STG.N = apply(LakeO.xtab[,comp.stations],1,N.obs,na.rm=T)
+
+LakeO.xtab$Mean = with(LakeO.xtab,ifelse(is.na(LOK1),coe_LOK,LOK1))
+
+# plot(LOK1~coe_LOK,stg.da.xtab)
+# plot(LOK1~LOK2,stg.da.xtab)
+# plot(coe_LOK~comp.STG,stg.da.xtab)
+# plot(LOK1~comp.STG,stg.da.xtab)
+
+# LOK.DBKEYS.bk=subset(LOK.DBKEYS,is.na(BK)==F)
+# stg.bk=data.frame()
+# for(i in 1:nrow(na.omit(LOK.DBKEYS.bk))){
+#   tmp=DBHYDRO_breakpoint((dates[2] - 3*86400),dates[2],LOK.DBKEYS.bk$BK[i],dataonly=F)
+#   tmp.meta=tmp$METADATA
+#   tmp=tmp$REPORT
+#   tmp$DBKEY=as.character(LOK.DBKEYS.bk$BK[i])
+#   tmp$UNITS=tmp.meta$UNITS
+#   stg.bk=rbind(stg.bk,tmp)
+#   print(i)
+# }
+# stg.bk=merge(stg.bk,LOK.DBKEYS[,c("STATION","BK")],by.x="DBKEY",by.y="BK")
+# stg.bk$DATE=date.fun(stg.bk$DATE)
+# stg.bk$Data.Value[stg.bk$Data.Value>19]=NA
+
+# fill=data.frame(DATE=seq(min(LakeO.xtab$DATE),max(map.q$Date),"1 days"))
+fill=data.frame(DATE=seq(Start.Date,End.Date,"1 days"))
+LakeO.xtab=merge(LakeO.xtab,fill,"DATE",all.y=T)|>
+  mutate(LOK.stage = Mean,
+         DOWY=hydro.day(DATE),
+         WY=WY(DATE),
+         recess_7day = c(rep(NA,7),diff(LOK.stage,lag=7)),
+         recess_30day = c(rep(NA,30),diff(LOK.stage,lag=30)),
+         DoY=as.numeric(format(DATE,"%j")),
+         CY=as.numeric(format(DATE,"%Y")))
+
+LakeO.xtab$LOK.stage[LakeO.xtab$LOK.stage==0]=NA
+
+```
+
+```{r reg sch}
+### LORS
+LORS08.sch.bk= data.frame(
+  day = c(1, 2, 2, 16, 2, 1, 2, 2, 16, 2, 1, 1, 1, 16, 2, 1, 1, 1, 16, 2, 1, 
+          16, 16, 1, 16, 1, 1, 1, 16, 1, 16, 1, 16, 1, 2, 1, 1, 16, 1, 16, 1,
+          16, 1, 2, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1), 
+  month = c(1, 4, 6, 9, 11, 1, 4, 6, 9, 11, 1, 4, 6, 9, 11, 1, 4, 6, 9, 11, 
+            1, 2, 4, 6, 9, 10, 12, 1, 2, 4, 4, 6, 9, 10, 11, 12, 1, 2, 4, 4,
+            6, 9, 10, 11, 12, 1, 9, 10, 1, 4, 5, 6, 6, 10, 10, 11, 12),
+  variable = c("ZONE.B", "ZONE.B", "ZONE.B", "ZONE.B", "ZONE.B", "ZONE.C", 
+               "ZONE.C", "ZONE.C", "ZONE.C", "ZONE.C", "ZONE.C1", "ZONE.C1",
+               "ZONE.C1", "ZONE.C1", "ZONE.C1", "ZONE.D", "ZONE.D", "ZONE.D", 
+               "ZONE.D", "ZONE.D", "ZONE.D0", "ZONE.D0", "ZONE.D0", "ZONE.D0",
+               "ZONE.D0", "ZONE.D0", "ZONE.D0", "ZONE.D1", "ZONE.D1", 
+               "ZONE.D1", "ZONE.D1", "ZONE.D1", "ZONE.D1", "ZONE.D1",
+               "ZONE.D1", "ZONE.D1", "ZONE.D2", "ZONE.D2", "ZONE.D2", 
+               "ZONE.D2", "ZONE.D2", "ZONE.D2", "ZONE.D2", "ZONE.D2",
+               "ZONE.D2", "ZONE.E", "ZONE.E", "ZONE.E", "ZONE.SSM",
+               "ZONE.SSM", "ZONE.SSM", "ZONE.SSM", "ZONE.SSM", "ZONE.SSM",
+               "ZONE.SSM", "ZONE.SSM", "ZONE.SSM"), 
+  value = c(17.25, 17.25, 16, 16.5, 17.25, 16.88, 16.5, 15.5, 16.13, 16.88, 
+            15.25, 14.5, 14, 14.75, 15.25, 16.25, 15.5, 15, 15.75, 16.25, 14,
+            13.5, 13.5, 13, 14, 14.5, 14.5, 14.75, 14.29, 14.17, 14.13, 13.67,
+            14.58, 14.97, 15.08, 15.08, 15.5, 15.08, 14.83, 14.75, 14.33, 
+            15.17, 15.44, 15.67, 15.67, 12.6, 12.6, 13, 12.16, 11.7, 10.95, 
+            10.5, 10.5, 13, 13, 12.8, 12.4))  
+
+vals <- c(-3, -2, -1, 0, 1)
+fill=data.frame(Date=seq(date.fun(paste(CurWY+min(vals),"01-01",sep="-")),date.fun(paste(CurWY+max(vals),"04-30",sep="-")),"1 days"))
+
+n_row_vals = nrow(LORS08.sch.bk)
+tot_row = n_row_vals*length(vals)
+date_mat =matrix(NA,nrow=tot_row,ncol=1) # data.frame(Date = rep(NA,tot_row))
+
+for (i in seq_along(vals)) {
+  start_idx <- (i - 1) * n_row_vals + 1
+  end_idx <- i * n_row_vals
+  date_mat[start_idx:end_idx, 1] <- date.fun(
+    paste(CurWY + vals[i], LORS08.sch.bk$month, LORS08.sch.bk$day, sep = "-")
+  )
+}
+date_mat = data.frame(Date = date.fun(as.POSIXct(date_mat,origin = "1970-01-01")))
+
+LORS08.sch.bk = cbind(LORS08.sch.bk,date_mat)|>
+  dcast(Date~variable,value.var = "value",mean)|>
+  merge(fill,"Date",all.y=T)
+
+LORS08.sch.bk[-1] = lapply(LORS08.sch.bk[-1],dat.interp)
+
+LORS08.sch.bk= LORS08.sch.bk|>
+  mutate(DOWY = hydro.day(Date),
+         WY = WY(Date))|>
+  subset(Date<date.fun("2024-08-12"))
+
+### LOSOM
+LOSOM.sch.bk = data.frame(
+  day = c(1, 2, 2, 2, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1,
+          1, 2, 22, 2, 2, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 2, 1, 2, 1, 1), 
+  month = c(1, 4, 6, 11, 1, 6, 11, 1, 6, 11, 1, 4, 5, 6, 6, 10, 10, 11, 12,
+            1, 4, 5, 6, 6, 8, 10, 11, 1, 4, 5, 6, 6, 10, 11, 1, 4, 5, 6, 6,
+            10, 10, 11, 12), 
+  variable = c("ZONE.A", "ZONE.A", "ZONE.A", "ZONE.A", "ZONE.BC", "ZONE.BC", 
+               "ZONE.BC",  "ZONE.BXX", "ZONE.BXX", "ZONE.BXX", "ZONE.D",
+               "ZONE.D", "ZONE.D",  "ZONE.D", "ZONE.D", "ZONE.D", "ZONE.D",
+               "ZONE.D", "ZONE.D", "ZONE.D1",  "ZONE.D1", "ZONE.D1", "ZONE.D1", 
+               "ZONE.D1", "ZONE.D1", "ZONE.D1", "ZONE.D1", "ZONE.D2", 
+               "ZONE.D2", "ZONE.D2", "ZONE.D2", "ZONE.D2", "ZONE.D2",
+               "ZONE.D2", "ZONE.D3", "ZONE.D3", "ZONE.D3", "ZONE.D3",
+               "ZONE.D3", "ZONE.D3", "ZONE.D3", "ZONE.D3", "ZONE.D3"), 
+  value = c(17.25, 17.25, 16.5, 17.25, 16.85, 16.1, 16.85, 16.85, 16.1, 16.85,
+            12.16,  11.7, 10.95, 10.5, 10.5, 13, 13, 12.8, 12.4, 14.49, 13.94,
+            13.04, 12.5, 14.5, 14.5, 15.5, 15.5, 13.66, 13.2, 12.45, 12, 14.5,
+            14.5, 15, 12.16, 11.7, 10.95, 10.5, 10.5, 13, 13, 12.8, 12.4)
+)
+
+n_row_vals = nrow(LOSOM.sch.bk)
+tot_row = n_row_vals*length(vals)
+date_mat =matrix(NA,nrow=tot_row,ncol=1) # data.frame(Date = rep(NA,tot_row))
+
+for (i in seq_along(vals)) {
+  start_idx <- (i - 1) * n_row_vals + 1
+  end_idx <- i * n_row_vals
+  date_mat[start_idx:end_idx, 1] <- date.fun(
+    paste(CurWY + vals[i], LOSOM.sch.bk$month, LOSOM.sch.bk$day, sep = "-")
+  )
+}
+date_mat = data.frame(Date = date.fun(as.POSIXct(date_mat,origin = "1970-01-01")))
+
+LOSOM.sch.bk = cbind(LOSOM.sch.bk,date_mat)|>
+  dcast(Date~variable,value.var = "value",mean)|>
+  merge(fill,"Date",all.y=T)
+
+LOSOM.sch.bk[-1] = lapply(LOSOM.sch.bk[-1],dat.interp);
+
+LOSOM.sch.bk = LOSOM.sch.bk|>
+  mutate(DOWY = hydro.day(Date),
+         WY = WY(Date))|>
+  subset(Date>=date.fun("2024-08-12"))
+
+```
+
+```{r STG_STORE}
+WCP.tab7_8=data.frame(
+  STG.FT = c(8, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9, 9.1, 9.2, 
+             9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10, 10.1, 10.2, 10.3, 10.4,
+             10.5, 10.6, 10.7, 10.8, 10.9, 11, 11.1, 11.2, 11.3, 11.4, 11.5,
+             11.6, 11.7, 11.8, 11.9, 12, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6,
+             12.7, 12.8, 12.9, 13, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 
+             13.8, 13.9, 14, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 
+             14.9, 15, 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 
+             16, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 17, 
+             17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7, 17.8, 17.9, 18, 18.1,
+             18.2, 18.3, 18.4, 18.5, 18.6, 18.7, 18.8, 18.9, 19, 19.1, 19.2, 
+             19.3, 19.4, 19.5, 19.6, 19.7, 19.8, 19.9, 20),
+  STORE.ACFT = c(1329506 , 1356107 , 1382985 , 1410137 , 1437563 , 1465259 , 
+                 1493225 , 1521460 , 1549960 , 1578726 , 1607755 , 1637045 , 
+                 1666596 , 1696405 , 1726471 , 1756792 , 1787366 , 1818193 , 
+                 1849270 , 1880596 , 1912169 , 1943988 , 1976050 , 2008355 , 
+                 2040901 , 2073686 , 2106708 , 2139967 , 2173459 , 2207185 , 
+                 2241141 , 2275328 , 2309742 , 2344382 , 2379247 , 2414335 ,
+                 2449644 , 2485174 , 2520921 , 2556886 , 2593065 , 2629458 ,
+                 2666063 , 2702878 , 2739901 , 2777132 , 2814567 , 2852207 , 
+                 2890049 , 2928092 , 2966333 , 3004772 , 3043407 , 3082235 , 
+                 3121257 , 3160469 , 3199871 , 3239460 , 3279235 , 3319195 , 
+                 3359338 , 3399662 , 3440166 , 3480848 , 3521707 , 3562740 , 
+                 3603947 , 3645325 , 3686873 , 3728590 , 3770474 , 3812523 , 
+                 3854735 , 3897110 , 3939644 , 3982338 , 4025189 , 4068196 ,
+                 4111356 , 4154669 , 4198133 , 4241745 , 4285506 , 4329412 , 
+                 4373463 , 4417656 , 4461990 , 4506464 , 4551076 , 4595825 , 
+                 4640708 , 4685724 , 4730871 , 4776149 , 4821554 , 4867087 , 
+                 4912744 , 4958525 , 5004428 , 5050450 , 5096592 , 5142851 , 
+                 5189225 , 5235712 , 5282312 , 5329023 , 5375843 , 5422770 ,
+                 5469802 , 5516939 , 5564179 , 5611519 , 5658959 , 5706497 ,
+                 5754130 , 5801858 , 5849680 , 5897592 , 5945594 , 5993684 ,
+                 6041861 ))|>
+  mutate(log.STG = log(STG.FT),
+         STORE.KACFT = STORE.ACFT/1000,
+         log.STORE.KACFT = log(STORE.KACFT))
+
+# plot(STG.FT~STORE.ACFT,WCP.tab7_8)
+stg.store.mod = lm(log.STORE.KACFT~log.STG,WCP.tab7_8)
+# summary(stg.store.mod)
+# 
+# exp(predict(stg.store.mod,WCP.tab7_8[10,]))
+# WCP.tab7_8[10,]
+
+LakeO.xtab$LOKStore.pred = exp(predict(stg.store.mod,data.frame(log.STG=log(LakeO.xtab$Mean))))
+LakeO.xtab$diff.LOKStore = c(NA,diff(LakeO.xtab$LOKStore.pred))
+
+```
+
+## Regulation Schedule
+
+```{r echo=F}
+LOSOM.sch.bk2 = LOSOM.sch.bk[,c("Date","ZONE.A","ZONE.BC","ZONE.D")]|>
+  melt(id.var = "Date",value.name="reg.STG",variable.name="Zone")|>
+  merge(data.frame(Zone=c("ZONE.A","ZONE.BC","ZONE.D"),
+                   Zone.txt = c("Zone A","Zone BC","Zone D")),
+        "Zone")
+tmp.dat = subset(LakeO.xtab,DATE==YEST)
+tmp.sch = subset(LOSOM.sch.bk2,Date == YEST)
+# findInterval(tmp.sch$reg.STG,tmp.dat$Mean)
+greater_indices <- which(tmp.dat$Mean > tmp.sch$reg.STG)
+
+zone.txt.val = tmp.sch[min(greater_indices),"Zone.txt"]
+zone.diff = format(round(tmp.dat$Mean - tmp.sch[min(greater_indices),]$reg.STG,1),nsmall=1);# Ft above Zone.txt floor. 
+
+```
+
+For details on the current Lake Okeechobee Regulation Schedule, please refer to the Lake Okeechobee System Operating Manual Water Control Plan ([LOSOM WCP](./_docs/2024_LOSOM_WCP.pdf)).
+
+
+Currently, Lake Okeechobee is in `r paste(zone.txt.val)` of the LOSOM regulation schedule. The current average lake stage is `r paste0(zone.diff)` Ft above the `r paste(zone.txt.val)` floor.
+
+
+```{r table1, fig.align='center'}
+#| tbl-cap-location: top
+#| tbl-cap: "Stage and recession rates this time for the current and last three water years"
+# cap.val="Stage and recession rates this time for the current and last three water years"
+
+subset(LakeO.xtab,DOWY==hydro.day(YEST))|>
+  flextable(col_keys=c("DATE","WY","LOK.stage","recess_7day","recess_30day"))|>
+  width(width=c(1,1,1.25,1.5,1.5))|>
+  align(align="center",part="all")|>
+  colformat_datetime(j=1,fmt_date="%m-%d")|>
+  colformat_double(j=2,big.mark="",digits=0)|>
+  colformat_num(j=3:5,na_str="- NR -")|>
+  padding(padding=1,part="all")|>
+  font(fontname="Times New Roman",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")|>
+  bold(part="header")|>
+  set_header_labels("DATE"="Date\n(Month-Day)",
+                    "WY"="Water Year",
+                    "LOK.stage"="Stage\n(ft, NGVD29)",
+                    "recess_7day"="7-Day Recession Rate\n(ft 7-d\u207B\u00B9)",
+                    "recess_30day"="30-Day Recession Rate\n(ft 30-d\u207B\u00B9)")|>
+  bg(i=~WY==CurWY,part="body",bg="wheat")
+  # add_header_lines(values=cap.val)|>align(align="center",part="header")|>fontsize(size=13,part="header")# |>
+  # footnote(i=4,j=3,value=ifelse(is.na(subset(LakeO.xtab,DATE==YEST)$P1)==T|is.na(subset(LakeO.xtab,DATE==YEST)$P2)==T,as_paragraph("Value estimated from average stage height across L001, L005, L006, LZ40, S133TW, S352HW & S4TW"),as_paragraph("Value provided by SFWMD DBKEY:N3466")),ref_symbols =c(" A "))|>
+  # footnote(j=5,part="header",value=as_paragraph("-0.5 ft 30-d\u207B\u00B9 maximum 30-day Recession Rate for HAB Deviation"),ref_symbols =c(" B "))
+```
+
+```{r LORSplot,results='hide',dpi=96,fig.width=7,fig.height=4.75,fig.align='center',fig.cap=paste0("Lake Okeechobee daily average stage elevation for water year ",CurWY," (WY", CurWY,") relative to the last two water years relative to the Lake Okeechobee Regulation Schedule (LORS).")}
+
+### Plot
+lwd.val=1
+xlim.vals=date.fun(c(paste(CurWY-1,05,01,sep="-"),paste(CurWY,04,30,sep="-")))
+xmaj=seq(xlim.vals[1],xlim.vals[2],by="2 months");xmin=seq(xlim.vals[1],xlim.vals[2],by="1 months")
+xlim.vals2=hydro.day(xlim.vals)
+
+ylim.val=c(9,18);by.y=1
+ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+
+par(family="serif",mar=c(0.25,1.5,1,1.5),oma=c(0.1,3,0.5,3));
+layout(matrix(1:2,2,1,byrow=T),heights=c(1,0.2))
+
+plot(ZONE.B~DOWY,LORS08.sch.bk,ylim=ylim.val,xlim=xlim.vals2,type="n",ann=F,axes=F,yaxs="i",xaxs="i")
+abline(h=seq(9,18,1),v=hydro.day(xmin),lwd=1,col="grey",lty=3)
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.B~DOWY,lwd=2,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.C~DOWY,lwd=2,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.C1~DOWY,lwd=2,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.D~DOWY,lwd=2,lty=1,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.D0~DOWY,lwd=2,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.D1~DOWY,lwd=2,lty=2,col="grey"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.D2~DOWY,lwd=2,lty=2,col="grey"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.E~DOWY,lwd=2,lty=1,col="black"))
+with(subset(LORS08.sch.bk,WY==CurWY),lines(ZONE.SSM~DOWY,lwd=2,lty=1,col="grey"))
+text(10,17.5,"High Lake Management Band",font=2,pos = 4)
+text(10,9.5,"Water Shortage Management Band",font=2,pos = 4)
+text(10,12,"Beneficial Use",font=2,pos = 4)
+text(10,12.8,"Base Flow",font=2,pos = 4)
+text(45,15.8,"High",font=2)
+text(15,15.4,"Intermediate ",font=2,cex=0.75,pos = 4)
+text(30,13.5,"Low",font=2,cex=0.75,pos = 4)
+
+with(subset(LOSOM.sch.bk,WY==CurWY),lines(ZONE.A~DOWY,lwd=2,col="black"))
+with(subset(LOSOM.sch.bk,WY==CurWY),lines(ZONE.BC~DOWY,lwd=2,col="black"))
+with(subset(LOSOM.sch.bk,WY==CurWY),lines(ZONE.D~DOWY,lwd=2,col="grey"))
+text(246,17.5,"Zone A",font=2)
+text(290,16.8,"Zone BC",font=2,pos = 4)
+text(277,14.3,"Zone D",font=2,pos = 4)
+abline(v=hydro.day(date.fun("2024-08-12")),lty=2,lwd=2)
+
+text(hydro.day(date.fun("2024-08-12")),10.5,"LORS08",pos=2,col="pink2")
+text(hydro.day(date.fun("2024-08-12")),10.5,"LOSOM",pos=4,col="purple")
+
+with(subset(LakeO.xtab,WY==CurWY-2),lines(DOWY,LOK.stage,lwd=4,col=adjustcolor("forestgreen",0.5),lty=1))
+with(subset(LakeO.xtab,WY==CurWY-1),lines(DOWY,LOK.stage,lwd=4,col=adjustcolor("blue",0.5),lty=1))
+with(subset(LakeO.xtab,WY==CurWY),lines(DOWY,LOK.stage,lwd=4,col="red",lty=1))
+
+lab.loc = subset(LOSOM.sch.bk,Date == YEST)$ZONE.D-0.8
+
+if(is.na(subset(LakeO.xtab,DATE==YEST)$LOK.stage)==T|nrow(subset(LakeO.xtab,DATE==YEST))==0){}else{
+with(subset(LakeO.xtab,DATE==YEST),points(DOWY,LOK.stage,pch=21,bg=adjustcolor("grey",0.5),col="gray",lwd=0.1,cex=1.25))
+if(subset(LakeO.xtab,DATE==YEST)$DOWY>300){
+  with(subset(LakeO.xtab,DATE==YEST),segments(DOWY,LOK.stage,DOWY-30,lab.loc,lty=2))
+  with(subset(LakeO.xtab,DATE==YEST),text(DOWY-30,lab.loc+0.1,paste(format(round(LOK.stage,2),nsmall=2),"Ft\nNGVD29"),cex=0.8,xpd=NA,pos=1,offset=-0.1))
+  }else if(subset(LakeO.xtab,DATE==YEST)$DOWY<30){
+    with(subset(LakeO.xtab,DATE==YEST),segments(DOWY,LOK.stage,DOWY+30,lab.loc,lty=2))
+  with(subset(LakeO.xtab,DATE==YEST),text(DOWY+30,lab.loc+0.1,paste(format(round(LOK.stage,2),nsmall=2),"Ft\nNGVD29"),cex=0.8,xpd=NA,pos=1,offset=0.1))
+  }else{
+  with(subset(LakeO.xtab,DATE==YEST),segments(DOWY,LOK.stage,DOWY,lab.loc,lty=2))
+  with(subset(LakeO.xtab,DATE==YEST),text(DOWY,lab.loc+0.1,paste(format(round(LOK.stage,2),nsmall=2),"Ft\nNGVD29"),cex=0.8,xpd=NA,pos=1,offset=0.1))
+  }
+}
+
+axis_fun(1,hydro.day(xmaj),hydro.day(xmin),format(xmaj,"%b"),line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj)
+box(lwd=lwd.val)
+mtext(side=1,"Month",line=2,cex=1.25)
+mtext(side=2,"Stage Elevation (Feet, NGVD29)",line=2.5,cex=1.25)
+mtext(side=3,adj=0,paste("Date:",format(YEST,"%b %d, %Y")))
+mtext(side=3,adj=1,"Data are provisional and subject to change",col="red")
+
+ylim.val2=c(8,16);by.y2=1
+ymaj2=seq(ylim.val2[1],ylim.val2[2],by.y2);ymin2=seq(ylim.val2[1],ylim.val2[2],by.y2/2)
+lok.con=1.25
+axis_fun(4,ymaj2+lok.con,ymin2+lok.con,ymaj2)
+mtext(side=4,"Stage Elevation (Feet, NAVD88)",line=2.5,cex=1.25)
+
+plot(0:1,0:1,type = 'n', axes = F,xlab=NA, ylab=NA)
+legend(0.5,0.5,
+       legend=c(paste0("WY",CurWY),paste0("WY",CurWY-1),paste0("WY",CurWY-2)),
+       col=c("red",adjustcolor(c("blue","forestgreen"),0.5)),lty=c(1,1),lwd=c(4,4,4),ncol=3,cex=1,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+```
+
+## Discharge
+
+```{r Discharge data,echo=FALSE,message=FALSE,warning=FALSE}
+
+## USACE Maps and Archived data
+# mapdata=readLines("https://w3.saj.usace.army.mil/h2o/reports/StatusDaily/archive/1217/StatusDaily.htm")
+dates2=seq(date.fun(Sys.Date()-6),date.fun(Sys.Date()),"1 days")
+map.q=data.frame()
+for(i in 1:(length(dates2))){
+  map.url=paste0("https://w3.saj.usace.army.mil/h2o/reports/StatusDaily/archive/",format(dates2[i],"%m%d"),"/StatusDaily.htm")
+  # download.file(map.url, destfile = "map_dat.html", quiet=TRUE)
+  mapdata=readLines(map.url)
+
+  val=grep("S354",mapdata)
+  S354=strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1]
+
+  val=grep("S351",mapdata)
+  S351=strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1]
+
+  val=grep("S352",mapdata)
+  S352=strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1]
+
+  val=grep("S-271",mapdata)
+  S271=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</div>")[[1]][1]
+
+  val=grep("CA1IN",mapdata)
+  WCA1=strsplit(strsplit(mapdata[val],"\\s+")[[1]][13],"</div>")[[1]][1]
+
+  val=grep("CA2IN",mapdata)
+  WCA2=strsplit(strsplit(mapdata[val],"\\s+")[[1]][13],"</div>")[[1]][1]
+
+  val=grep("CA3IN",mapdata)
+  WCA3=strsplit(strsplit(mapdata[val],"\\s+")[[1]][13],"</div>")[[1]][1]
+
+  val=grep("S10",mapdata)
+  S10s=as.numeric(strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1])
+
+  val=grep("S11",mapdata)
+  S11s=as.numeric(strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1])
+
+  val=grep("S12",mapdata)
+  S12s=as.numeric(strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1])
+
+  val=grep("S333",mapdata)
+  S333=as.numeric(strsplit(mapdata[val],"<br>|\\s+")[[1]][12])
+  S333N=as.numeric(strsplit(strsplit(mapdata[val],"<br>|\\s+")[[1]][14],"</div>")[[1]][1])
+
+  val=grep("S356",mapdata)
+  S356=as.numeric(strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</div>")[[1]][1])
+
+  ENP=S12s+(S333+S333N)-S356
+
+  val=grep("Istokpoga</a>",mapdata)
+  Istok=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</div>")[[1]][1]
+
+  val=grep("S-65E</a>",mapdata)
+  S65E=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"<br>")[[1]][1]
+
+  val=grep("S-65EX1</a>",mapdata)
+  S65EX1=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"<br>")[[1]][1]
+
+  val=grep("Fisheating Creek",mapdata)
+  FEC=strsplit(strsplit(mapdata[val],"\\s+")[[1]][7],"</div>")[[1]][1]
+
+  val=grep("/plots/s79h.pdf",mapdata)
+  S79=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</a>")[[1]][1]
+  #
+  # val=grep("/plots/s78h.pdf",mapdata)
+  # S78=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</a>")[[1]][1]
+
+  val=grep("/plots/s77",mapdata)
+  S77=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</a>")[[1]][1]
+
+  val=grep("/plots/s308",mapdata)
+  S308=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</a>")[[1]][1]
+
+  val=grep("/plots/s80",mapdata)
+  S80=strsplit(strsplit(mapdata[val],"\\s+")[[1]][6],"</a>")[[1]][1]
+
+  val=grep("S155A",mapdata);# Lake Worth Lagoon
+  S155A=strsplit(strsplit(mapdata[val],"\\s+")[[1]][8],"</")[[1]][1]
+
+  # other LOK inflows
+  grep("inflows",mapdata)
+  # mapdata[213]
+  tmp=strsplit(mapdata[213],"<br>|>")[[1]]
+  OtherLOKInflow=sum(as.numeric(sapply(strsplit(tmp[grepl(" inflows",tmp)],":"),"[")[2,]),na.rm=T)
+
+  val=grep("../plots/ok8hhp.pdf",mapdata)
+  LakeStage=as.numeric(strsplit(mapdata[val[1]],"\\s+")[[1]][6])
+
+  # date.val=dates[i]-ddays(1)
+  date.val=dates2[i]
+  rslt=data.frame(Date=date.val-days.to.sec(1),
+                  OtherLOKInflow=OtherLOKInflow,
+                  FEC=as.numeric(FEC),
+                  Istok=as.numeric(Istok),
+                  S65E=as.numeric(S65E),
+                  S65EX1=as.numeric(S65EX1),
+                  S354=as.numeric(S354),
+                  S351=as.numeric(S351),
+                  S352=as.numeric(S352),
+                  S271=as.numeric(S271),
+                  S77=as.numeric(S77),
+                  S79=as.numeric(S79),
+                  S80=as.numeric(S80),
+                  S308=as.numeric(S308),
+                  WCA1=as.numeric(WCA1),
+                  WCA2=as.numeric(WCA2),
+                  WCA3=as.numeric(WCA3),
+                  S10s=as.numeric(S10s),
+                  S11s=as.numeric(S11s),
+                  ENP=as.numeric(ENP),
+                  S12s=as.numeric(S12s),
+                  S333=as.numeric(S333),
+                  S333N=as.numeric(S333N),
+                  S356=as.numeric(S356),
+                  S155A=as.numeric(S155A),
+                  LOK.stage=as.numeric(LakeStage)
+                  )
+  map.q=rbind(map.q,rslt)
+  # print(i)
+}
+
+map.q[,2:ncol(map.q)]=sapply(map.q[,2:ncol(map.q)], FUN=function(x) ifelse(is.na(x)==T,0,x))
+
+map.q$NthLake=rowSums(map.q[,c("FEC","Istok","S65E","S65EX1")],na.rm=T)
+map.q$LOIN=rowSums(map.q[,c("OtherLOKInflow","FEC","Istok","S65E","S65EX1")],na.rm=T)
+map.q$LOOUT=rowSums(map.q[,c("S77","S354","S351","S352","S271","S308")],na.rm=T)
+
+map.q$LOK_to_EAA=(rowSums(map.q[,c("S354","S351","S352","S271")],na.rm=T))
+map.q$EAA_to_WCAs=(rowSums(map.q[,c("WCA1","WCA2","WCA3")],na.rm=T))
+
+# plot(LOOUT~Date,map.q)
+
+## DBHydro
+flow.dbkeys.E=data.frame(
+  STRUCT=c("S308","S308"),
+  ALIAS=c("S308","S308"),
+  STATION=c("S308.DS","S308_S"),
+  DBKEY=c("15626","DJ239"),
+  Priority=c("P1","P2"),
+  Basin="E",
+  Inflow_direction=-1,
+  Outflow=1,
+  WQSite=c("S308C")
+)
+
+flow.dbkeys.W=data.frame(
+  STRUCT=c("CU5A.S282","S77","S77"),
+  ALIAS=c("CULV5A_C","S77_T","S77_T"),
+  STATION=c("CULV5A_C","S77_T","S77_T"),
+  DBKEY=c("90880","15635","DJ235"),
+  Priority=c("P1","P1","P2"),
+  Basin="W",
+  Inflow_direction=-1,
+  Outflow=1,
+  WQSite=c("CULV5A","S77","S77")
+)
+
+flow.dbkeys.S=data.frame(
+  STRUCT=c("CU10","CU10A","CU10A","CU12","CU12A","CU4A","INDUST","INDUST",
+           "S2.S351","S2.S351","S236","S3.S354","S3.S354","S351_TEMP",
+           "S352","S352","S352_TEMP","S354_TEMP","S4","S4","S2","S3"),
+  ALIAS=c("C-10","CU10A","CU10A","C-12","C-12A","C-4A","INDUST","INDUST",
+          "S2","S2","S236_P","S3","S3","S351_TEMP",
+          "S352","S352","S352_TEMP","S354_TEMP","S4_P","S4_P","S2","S3"),
+  STATION=c("C-10","L8.441","S271","C-12","C-12A","C-4A","INDUST","INDUST",
+            "S2","S2","S236_P","S3","S3","S351_TEMP",
+            "HGS5X","HGS5X","S352_TEMP","S354_TEMP","S4_P","S4_P","S2","S3"),
+  DBKEY=c("15645","15640","65409","15646","15647","15648","15628","02747",
+          "91508","15021","15644","91513","15018","91509",
+          "15068","91510","91511","91514","15630","91608","91473","91599"),
+  Priority=c("P1","P1","P2","P1","P1","P1","P1","P2",
+             "P1","P2","P1","P1","P2","P1",
+             "P1","P2","P1","P1","P1","P2","P1","P1"),
+  Basin="S",
+  Inflow_direction=c(1,-1,-1,1,1,1,-1,-1,
+                     -1,-1,1,-1,-1,-1,
+                     -1,-1,1,-1,1,1,1,-1),
+  Outflow=c(0,1,1,0,0,0,1,1,
+            1,1,0,1,1,1,
+            1,1,1,1,0,0,1,1),
+  WQSite=c("CULV10","CULV10A","CULV10A","CULV12","CULV12A","CULV4A","INDUSCAN","INDUSCAN",
+           "S2","S2","S236","S3","S3","S351",
+           "S352","S352","S352","S354","S4","S4","S2","S3")
+)
+
+flow.dbkeys.N=data.frame(
+  STRUCT=c("C41","CU5.S281","FISHCR","G207","G208","G33",
+           "G34","G74","G75","G76",
+           "S127","S127","S127","S129","S129","S129",
+           "S131","S131","S133","S133","S135","S135","S135",
+           "S154","S154","S154C","S191","S191",
+           "S65E","S65E","S65EX1","S71","S71",
+           "S72","S72","S84","S84","S84X"),
+  ALIAS=c("C41H78_I","CV5","FISHCR","G207","G208","G33_C",
+          "G34_C","G74_C","G75_C","G76_C",
+          "S127_C","S127_P","S127_P","S129_C","S129_P","S129_P",
+          "S131_C","S131_P","S133_P","S133_P","S135_C","S135_P","S135_P",
+          "S154_C","S154_C","S154C_C","S191_S","S191_S",
+          "S65E_S","S65E_S","S65EX1_S","S71_S","S71_S",
+          "S72_S","S72_S","S84_S","S84_S","S84X_S"),
+  STATION=c("C41H78_I","CV5","FISHCR","G207","G208","G33_C",
+            "G34_C","G74_C","G75_C","G76_C",
+            "S127_C","S127_P","S127_P","S129_C","S129 PMP_P","S129 PMP_P",
+            "S131_C","S131 PMP_P","S133_P","S133_P","S135_C","S135 PMP_P","S135 PMP_P",
+            "S154_C","S154_C","S154C_C","S191_S","S191_S",
+            "S65E_S","S65E_S","S65EX1_S","S71_S","S71_S",
+            "S72_S","S72_S","S84_S","S84_S","S84X_S"),
+  DBKEY=c(90871,90882,"WH036",90916,90918,91014,
+          91071,91267,91268,91269,
+          91370,15641,91371,91373,15642,91372,
+          91376,15643,15637,91377,91379,15638,91378,
+          15629,91401,91399,15639,91429,
+          15631,91656,"AL760",15633,91668,
+          15634,91675,15636,91687,91686),
+  Priority=paste0("P",
+                  c(1,1,1,1,1,1,
+                    1,1,1,1,
+                    1,1,2,1,1,2,
+                    1,1,1,2,1,1,2,
+                    1,2,1,1,2,
+                    1,2,1,1,2,
+                    1,2,1,2,1)),
+  Basin="N",
+  Inflow_direction=c(1,1,1,-1,-1,1,
+                     1,1,1,1,
+                     1,1,1,1,1,1,
+                     1,1,1,1,1,1,1,
+                     1,1,1,1,1,
+                     1,1,1,1,1,
+                     1,1,1,1,1),
+  Outflow=c(0,1,0,1,1,0,
+            0,0,0,0,
+            1,0,0,1,0,0,
+            1,0,0,0,1,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0,
+            0,0,0,0,0),
+  WQSite=c("C41H78","CULV5","FECSR78","G207","G208","C38W",
+           "L59E","L59W","L60E","L60W",
+           "S127","S127","S127","S129","S129","S129",
+           "S131","S131","S133","S133","S135","S135","S135",
+           "S154","S154","S154C","S191","S191",
+           "S65E","S65E","S65E","S71","S71",
+           "S72","S72","S84","S84","S84")
+)
+
+flow.dbkeys=rbind(flow.dbkeys.N,flow.dbkeys.E,flow.dbkeys.S,flow.dbkeys.W)
+
+flow.meta=DBHYDRO.meta.byDBKEY(flow.dbkeys$DBKEY)|>
+  mutate(START.DATE=date.fun(START.DATE,form="%d-%B-%Y"),
+         END.DATE=date.fun(END.DATE,form="%d-%B-%Y"))
+
+basins_labs = data.frame(
+  BASIN = c("L59E", "L59W", "L60E", "L60W","C41S","C41AS", "C40","L48","L49",
+            "FISH",
+            "S-65E",
+            "S-154C", "S-154",
+            "S-133",
+            "S191",
+            "S-2_6_7", "S.SHORE", "S-5A", "S-4", "L8",  "S-3_8",
+            "C44",
+            "HICPOCHE","NIC.S", "NIC.N",
+            "L OKEE"
+            ),
+  C_NAME = c(rep("Istokpoga", 9),
+             'Fisheating Creek',
+             "Kissimmee River",
+             rep("S154/S154C",2),
+             "Taylor Creek",
+             "Nubbin Slough",
+             rep('EAA',6),
+             "St Lucie",rep("Calooshatchee",3),"Lake Okeechobee"
+             )
+)|>
+  merge(flow.meta,"BASIN")
+
+
+flow.dbkeys2=subset(flow.dbkeys,DBKEY%in%subset(flow.meta,START.DATE<dates[2]&END.DATE>dates[1])$DBKEY)
+
+tmp1=read.csv("./data/LOK_Q.csv")
+tmp1$DATE=date.fun(tmp1$Date)
+if(max(tmp1$DATE)!=YEST){
+  flow.dat=data.frame()
+  for(i in 1:nrow(flow.dbkeys2)){
+    tmp=DBHYDRO_daily(dates[1],dates[2],flow.dbkeys2$DBKEY[i],vert_datum = NA)
+    tmp$DBKEY=as.character(flow.dbkeys2$DBKEY[i])
+    flow.dat=rbind(tmp,flow.dat)
+    print(paste(i,": ",flow.dbkeys2$DBKEY[i]))
+  }
+    write.csv(flow.dat,"./data/LOK_Q.csv",row.names=F)
+    flow.data=flow.dat|>
+    merge(flow.dbkeys[,c("DBKEY","STRUCT","ALIAS","Priority","Basin","Inflow_direction","Outflow","WQSite")],"DBKEY")|>
+    merge(basins_labs[,c("DBKEY",'BASIN',"C_NAME")],"DBKEY")|>
+    mutate(DATE=date.fun(Date))
+  
+}else{
+  flow.data=tmp1|>
+    merge(flow.dbkeys[,c("DBKEY","STRUCT","ALIAS","Priority","Basin","Inflow_direction","Outflow","WQSite")],"DBKEY")|>
+    merge(basins_labs[,c("DBKEY",'BASIN',"C_NAME")],"DBKEY")|>
+    mutate(DATE=date.fun(Date),
+           WY=WY(DATE))
+    
+}
+
+
+flow.xtab=reshape2::dcast(flow.data,DATE+WY+STRUCT+ALIAS+Inflow_direction+Outflow+Basin+C_NAME+WQSite~Priority,
+                                   value.var="Data.Value",sum,na.rm=T)|>
+  mutate(
+    Date.EST=date.fun(DATE),
+    fflow.cfs=ifelse(is.na(P1),P2,P1)*Inflow_direction,
+    direct=ifelse(fflow.cfs<0,"Outflow","Inflow"),
+    month=as.numeric(format(DATE,"%m")),
+    CY=as.numeric(format(DATE,"%Y"))
+  )
+
+
+flow.xtab.da = dcast(flow.xtab,Date.EST~direct, value.var = "fflow.cfs",fun.aggregate=function(x) sum(cfs.to.acftd(x)/1000,na.rm=T))|>
+  mutate(Outflow = abs(Outflow),
+         DOWY=hydro.day(Date.EST),
+         WY=WY(Date.EST),
+         DoY=as.numeric(format(Date.EST,"%j")),
+         CY=as.numeric(format(Date.EST,"%Y")))
+
+flow.xtab.da2 = ddply(subset(flow.xtab,is.na(direct)==F),c("Date.EST","direct","Basin"),summarise,tflow = sum(cfs.to.acftd(fflow.cfs)/1000,na.rm=T))|>
+  merge(expand.grid(Date.EST = seq(min(flow.xtab$Date.EST),max(flow.xtab$Date.EST),"1 days"),
+                    direct = c("Inflow","Outflow"),
+                    Basin = c("N","S","E",'W')),
+        c("Date.EST","direct","Basin"),all.y=T)|>
+  mutate(tflow=ifelse(is.na(tflow)==T,0,tflow))
+
+
+
+vars=c("Date.EST","N","S","E",'W')
+flow.xtab.da.inflow = dcast(subset(flow.xtab.da2,direct=="Inflow"),Date.EST~Basin,value.var = "tflow",sum)[,vars]
+# if(sum(vars%in%names(flow.xtab.da.inflow))>0){flow.xtab.da.inflow[,vars[!(vars%in%names(flow.xtab.da.inflow))]]=NA}
+# flow.xtab.da.inflow=flow.xtab.da.inflow[,vars]
+
+flow.xtab.da.outflow = dcast(subset(flow.xtab.da2,direct=="Outflow"),Date.EST~Basin,value.var = "tflow",sum)[,vars]
+# if(sum(vars%in%names(flow.xtab.da.outflow))>0){flow.xtab.da.outflow[,vars[!(vars%in%names(flow.xtab.da.outflow))]]=NA}
+# flow.xtab.da.outflow=flow.xtab.da.outflow[,vars]
+
+```
+
+
+
+```{r LOK_Q,dev="png", echo=FALSE,fig.width=6,fig.height=4.5,fig.align='center',fig.cap="Total Lake Okeechobee inflow and outflow volume for measured inflow/ouflows. Data Source: SFWMD DBHydro ."}
+
+max.q=max(subset(flow.xtab.da,Date.EST%in%seq(End.Date-days.to.sec(35),End.Date+days.to.sec(3),"1 days"))[,c("Inflow","Outflow")],na.rm=T)
+ylim.max=ceiling(max.q) + ceiling(max.q) %% 2
+
+ylim.val=c(0,ylim.max);by.y=ylim.max/4;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=date.fun(c(End.Date-days.to.sec(30),End.Date+days.to.sec(3)));xmaj=seq(xlim.val[1],xlim.val[2],by="7 days");xmin=seq(xlim.val[1],xlim.val[2],by="1 days")
+cols=c("dodgerblue1","indianred1")
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(2,0.4))
+par(family="serif",cex.axis=1.2,mar=c(2,2,1,1),oma=c(0.5,3,1,2));
+plot(Inflow~Date.EST,flow.xtab.da,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+with(flow.xtab.da,lines(Date.EST,Inflow,col=cols[1],lwd=2))
+with(flow.xtab.da,lines(Date.EST,Outflow,col=cols[2],lwd=2,lty=2))
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d/%Y"),line=-0.5)
+axis_fun(2,ymaj,ymin,format(ymaj),cex.axis=1)
+box(lwd=1)
+mtext("Date (MM/DD/YYYY)",side=1,line=2,cex=1)
+# mtext("Daily Discharge (x1000 Ac-Ft d\u207B\u00B9)",side=2,line=3.5,cex=1.25)
+mtext(side=2,line=2.5,expression(paste("Discharge (x1000 Ac-Ft day"^"-1",")")))
+
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.5,0.5,
+       legend=c("Lake Inflow","Lake Outflow"),
+       col=cols,lty=c(1,2),lwd=c(2.5,2.5),pt.cex=2.5,ncol=2,cex=1.25,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+
+```
+
+```{r LOK_Q2,dev="png", echo=FALSE,fig.width=6,fig.height=4.5,fig.align='center',fig.cap="Total Lake Okeechobee inflow and outflow by generalized basin for the past 14-days. Data Source: SFWMD DBHydro ."}
+
+max.q=max(subset(flow.xtab.da,Date.EST%in%seq(End.Date-days.to.sec(14),End.Date+days.to.sec(3),"1 days"))[,c("Inflow","Outflow")],na.rm=T)
+ylim.max=ceiling(max.q) + ceiling(max.q) %% 2
+
+ylim.val=c((ylim.max/2)*-1,ylim.max);by.y=ylim.max/4;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=date.fun(c(End.Date-days.to.sec(14),YEST));xmaj=seq(xlim.val[1],xlim.val[2],by="7 days");xmin=seq(xlim.val[1],xlim.val[2],by="1 days")
+cols = c("#3B9AB2", "#9EBE91", "#E4B80E", "#F21A00")# wesanderson::wes_palette("Zissou1",4,"continuous")
+
+inflow.tmp = t(subset(flow.xtab.da.inflow,Date.EST%in%seq(End.Date-days.to.sec(14),End.Date+days.to.sec(3),"1 days"))[,-1])
+outflow.tmp = t(subset(flow.xtab.da.outflow,Date.EST%in%seq(End.Date-days.to.sec(14),End.Date+days.to.sec(3),"1 days"))[,-1])
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(2,0.4))
+par(family="serif",cex.axis=1.2,mar=c(2,2,1,1),oma=c(0.5,3,1,2));
+x = barplot(inflow.tmp,ylim=ylim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA,col=adjustcolor(cols,0.5),space=c(0,0))
+barplot(outflow.tmp,ylim=ylim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA,col=adjustcolor(cols,0.5),space=c(0,0),add=T)
+# abline(h=ymaj,v=xmaj,lty=3,col="grey")
+ abline(h=0)
+
+axis_fun(1,x[seq(1,length(x),7)],x,format(xmaj,"%b %d"),line=-0.5)
+axis_fun(2,ymaj,ymin,format(ymaj),cex.axis=1)
+box(lwd=lwd.val)
+mtext("Date (MM/DD/YYYY)",side=1,line=2,cex=1)
+mtext(side=2,line=2.5,expression(paste("Discharge (x1000 Ac-Ft day"^"-1",")")))
+mtext(side=4,at=ylim.max/2,"Inflow",cex=1.25)
+mtext(side=4,at=(ylim.max/4)*-1,"Outflow",cex=1.25)
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.5,0.5,
+       legend=c("North","South",'East','West'),
+       pt.bg=adjustcolor(cols,0.5),pch=22,pt.cex=2.5,ncol=4,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5)
+
+```
+
+```{r table2,fig.align='center' }
+#| tbl-cap-location: top
+#| tbl-cap: "Stage and recession rates this time for the current and last three water years"
+# cap.val="Total measure inflow and outflow discharge volume, predicted lake storage volume and the change in store from the previous day."
+
+merge(LakeO.xtab,flow.xtab.da,
+      by.x=c("DATE","DOWY","WY","DoY","CY"),
+      by.y = c("Date.EST","DOWY","WY","DoY","CY"))|>
+  subset(DATE==YEST)|>
+  flextable(col_keys = c("DATE","Inflow","Outflow","LOKStore.pred","diff.LOKStore"))|>
+  colformat_datetime(j=1,fmt_datetime = "%Y-%m-%d")|>
+  colformat_double(j=c(2:3,5),digits=2)|>
+  colformat_double(j=4,digits=0)|>
+  align(align="center",part="all")|>
+  padding(padding=1,part="all")|>
+  font(fontname="Times New Roman",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")|>
+  bold(part="header")|>
+  width(width = c(1,1,1,1,1))|>
+  set_header_labels("DATE"="Date",
+                    "Inflow"="Measured Inflow\n(kAcft d\u207B\u00B9)",
+                    "Outflow"="Measured Outflow\n(kAcft d\u207B\u00B9)",
+                    "LOKStore.pred" = "Predicted Storage Volume (kAcft)",
+                    "diff.LOKStore" = "\u0394 Storage (kAcft)")|>
+  footnote(j="LOKStore.pred",part="header",
+           value=as_paragraph("Predicted storage volume based on fitted model to data presented in Table 7-8 of LOSOM WCP. Model is Storage (kAcft) = 3.73 * STAGE^1.66"),ref_symbols =c(" A "))
+  
+
+
+
+
+```

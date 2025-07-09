@@ -1,10 +1,18 @@
 project:
   type: website
- 
 
 website:
   title: "Everglades System Conditions Report"
   navbar:
+    tools:
+      - icon: github
+        menu:
+          - text: Source Code
+            href: https://github.com/SwampThingPaul/SystemReport
+          - text: Report a Bug
+            href: https://github.com/SwampThingPaul/SystemReport/issues
+          - text: Everglades Foundation
+            href: https://www.evergladesfoundation.org/
     left:
       - href: index.qmd
         text: Home
@@ -14,10 +22,14 @@ website:
     contents: 
       - href: KCOL.qmd
         text: Kissimmee Chain of Lakes
+      - href: KRR.qmd
+        text: Kissimmee River
       - href: LOK.qmd
         text: Lake Okeechobee
       - href: Estuaries.qmd
         text: Northern Estuaries
+      - href: habs.qmd
+        text: HABs (Redtide and Cyano)
       - href: EAA.qmd
         text: EAA
       - href: STAs.qmd
@@ -26,16 +38,24 @@ website:
         text: WCAs
       - href: ENP.qmd
         text: ENP
+      - href: enso.qmd
+        text: Climate Information
+      - href: WLCon.qmd
+        text: Stage Datum
+      - href: datProc.qmd
+        text: Data Source and Info
   page-footer: 
-   border: false
+   border: true
    left: "Published with [Quarto](https://quarto.org/)"
+   right: "[The Everglades Foundation](https://www.evergladesfoundation.org/)"
 
 format:
   html:
-    # grid:
-    #  sidebar-width: 350px
-    #  margin-width: 10px
-    # page-layout: full
+    grid:
+      sidebar-width: 400px
+      #margin-width: 50px
+      gutter-width: 1em
+    page-layout: full
     theme: cosmo
     css: styles.css
     toc: false

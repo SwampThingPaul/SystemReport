@@ -1,17 +1,19 @@
-
+---
+website:
+  page-navigation: true
+---
 
 ::: {.grid}
 
-::: {.g-col-6}
+::: {.g-col-5}
 
-```{r, out.width="100%",echo=FALSE,fig.align="center"}
-knitr::include_graphics("images/SERES_WaterChange.jpg")
+```{r,echo=FALSE,fig.align="center"}
+knitr::include_graphics("images/OverviewMap.png")
 ```
 
 :::
 
-::: {.g-col-6}
-
+::: {.g-col-7}
 ## Purpose
 
 This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.
@@ -19,9 +21,19 @@ This webpage/report is intended to aggregate information from different agencies
 ## Data sources
 
 * SFWMD: [DBHYDRO](https://my.sfwmd.gov/dbhydroplsql/show_dbkey_info.main_menu)
+* FFWCC: [Red Tide](https://myfwc.com/research/redtide/statewide/)
 * USGS: [NWIS](https://waterdata.usgs.gov/nwis)
 * USACE: [SAJ Water Management](https://w3.saj.usace.army.mil/h2o/reports.htm)
+* NOAA: [Buoy Center](https://www.ndbc.noaa.gov/), [HABSOS](https://habsos.noaa.gov/), [LOK BGA](https://coastalscience.noaa.gov/science-areas/habs/hab-monitoring-system/cyanobacteria-algal-bloom-satellite-lake-okeechobee-fl/), [SWFL HAB](https://coastalscience.noaa.gov/science-areas/habs/hab-monitoring-system/algal-blooms-from-satellite-southwest-florida/), 
+
+<!-- https://coastalscience.noaa.gov/science-areas/habs/hab-forecasts/gulf-of-mexico/florida-intensification-forecast/ -->
 
 :::
 
-:::
+::: 
+
+<!-- ## System Snapshot -->
+
+<!-- Include a green/red light (below/above regulation schedule) map for each area?  -->
+
+

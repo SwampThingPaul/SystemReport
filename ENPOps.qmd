@@ -1,0 +1,19 @@
+---
+title: "ENP Ops"
+format:
+  html:
+    toc: true
+    dev: png
+    type: cairo
+encoding: UTF-8
+knitr:
+  opts_chunk:
+    echo: false
+    message: false
+    warning: false
+editor_options: 
+  chunk_output_type: console
+execute: 
+  freeze: false
+---
+  

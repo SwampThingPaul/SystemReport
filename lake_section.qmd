@@ -1,0 +1,96 @@
+
+
+## `r lake_label`
+
+```{r plot_{{lake.val}}, echo=FALSE, fig.width=7.5, fig.height=5.25, fig.cap=paste0(lake_label, " daily average stage elevation for (top) last 365 days and (bottom) water year ", CurWY, " (WY", CurWY,") relative to the last two water years and regulation schedule.")}
+# lake.val <- params$lake
+# lake.val <- lake_list2[[1]]$lake
+# Set layout
+par(family = "serif", mar = c(2, 1.25, 1, 3.5), oma = c(1, 2.5, 1, 0.5))
+layout(matrix(c(1, 1, 2, 3), 2, 2, byrow = TRUE), heights = c(0.75, 1), widths = c(1, 0.5))
+
+# Call your plotting functions
+plot_lake_stage(
+  lake = lake.val,
+  lake_xtabs = lake_xtabs,
+  lake_schedules = lake_schedules,
+  lake_meta = lake_meta,
+  lake_labs = lake.labs1,
+  date_label = Sys.Date() - 1
+)
+
+plot_WY_lake_stage(
+  lake = lake.val,
+  lake_xtabs = lake_xtabs,
+  lake_schedules = lake_schedules,
+  lake_meta = lake_meta,
+  lake_labs = lake.labs1,
+  CurWY = CurWY
+)
+
+# plot(0:1,0:1)
+
+# # Map panel
+# par(mar = c(0, 0.5, 1, 0.05))
+# lake_lab_NAME <- subset(lake.labs, lake == lake.val)$NAME
+# lake_lab_map <- subset(lake.labs, lake == lake.val)$NAME.lc
+# 
+# lake.lab.other <- KCOL[!(KCOL$NAME %in% lake_lab_NAME),]
+# lake.labs.others <-  merge(subset(KCOL, NAME %in% lake.lab.other$NAME),lake.labs, "NAME", all.x = TRUE)
+# 
+# AOI.poly <- subset(lakes, NAME %in% lake_lab_NAME) |>
+#   st_buffer(1000) |>
+#   st_bbox() |>
+#   raster::extent() |>
+#   as("SpatialPolygons") |>
+#   st_as_sf()
+# st_crs(AOI.poly) <- utm17
+# 
+# bbox.lims <- st_bbox(st_buffer(KCOL, 2000))
+# plot(st_geometry(lakes), ylim = bbox.lims[c(2, 4)], xlim = bbox.lims[c(1, 3)],
+#      col = "lightblue", bg = "cornsilk", border = "grey", lwd = 0.5)
+# plot(st_geometry(canals), add = TRUE, col = "blue", lwd = 0.8)
+# plot(st_geometry(AOI.poly), add = TRUE, border = "red", lwd = 2)
+# st_txt(lake.labs.others[!duplicated(lake.labs.others$lake.lab),], labels = "NAME.lc", cex = 0.7)
+# box(lwd = 1)
+# mapmisc::scaleBar(crs = KCOL, "bottom", bty = "n", cex = 1, seg.len = 4, outer = FALSE)
+
+```
+
+```{r, echo=F}
+cap.val <- "Stage and recession rates this time for the current and last three water years"
+xtab <- lake_xtabs[[lake.val]]
+meta <- lake_meta[[lake.val]]$stations[1]
+vars <- c("Date.EST","WY",meta,paste(c("recess_7day","recess_30day","sch_diff"),meta,sep="."))
+
+header_labels <- c(
+  "Date.EST" = "Date\n(Month-Day)",
+  "WY" = "Water Year"
+)
+for (station in meta) {
+  header_labels[[station]] <- station# paste0(station, "\nStage (ft, NGVD29)")
+  header_labels[[paste0("recess_7day.", station)]] <- "7-Day Recession Rate\n(ft 7-d⁻¹)"
+  header_labels[[paste0("recess_30day.", station)]] <- "30-Day Recession Rate\n(ft 30-d⁻¹)"
+  header_labels[[paste0("sch_diff.", station)]] <- "Δ(Stage, Sch.)"
+}
+
+subset(xtab,DOWY==hydro.day(YEST)&WY%in%seq(CurWY-2,CurWY,1))|>
+  flextable(col_keys=vars)|>
+  width(width=c(1,1,1,1.5,1.5,1.25))|>
+  align(align="center",part="all")|>
+  colformat_datetime(j=1,fmt_date="%m-%d")|>
+  colformat_double(j=2,big.mark="",digits=0)|>
+  colformat_num(j=3:5,na_str="- NR -")|>
+  colformat_double(j=6,digits=2,na_str="- NR -")|>
+  padding(padding=1,part="all")|>
+  font(fontname="Times New Roman",part="all")|>
+  fontsize(size=12,part="body")|>
+  fontsize(size=13,part="header")|>
+  bold(part="header")|>
+  set_header_labels(values = header_labels)|>
+  bg(i=~WY==CurWY,part="body",bg="wheat")|>
+  footnote(j=3,value=as_paragraph("in Feet (NGVD29)"),ref_symbols =c(" A "),part="header")|>
+  footnote(j=6,value=as_paragraph(paste("Difference between Zone A and",meta)),ref_symbols =c(" B "),part="header")|>
+  add_header_lines(values=cap.val)%>%align(align="center",part="header")%>%fontsize(size=13,part="header")
+
+```
