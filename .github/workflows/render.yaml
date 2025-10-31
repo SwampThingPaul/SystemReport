@@ -12,7 +12,7 @@ permissions:
 jobs:
   render:
     name: Render report
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     env:
       R_LIBS_USER: ${{ github.workspace }}/.Rlibrary
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -29,44 +29,38 @@ jobs:
     - name: Setup Quarto
       uses: quarto-dev/quarto-actions/setup@v2
 
-    - name: Install system dependencies for sf/terra
-      run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgdal-dev \
-            libgeos-dev \
-            libproj-dev \
-            libudunits2-dev
-            
     - name: Cache R packages
       uses: actions/cache@v3
       with:
         path: ${{ env.R_LIBS_USER }}
         key: ${{ runner.os }}-R-${{ hashFiles('**/*.R', '**/*.Rmd') }}
         restore-keys: |
-          ${{ runner.os }}-r-
+          ${{ runner.os }}-R-
 
     - name: Install R packages (CRAN + GitHub)
+      shell: Rscript {0}
       run: |
-          Rscript -e 'install.packages(c("remotes","reshape2","plyr","zoo",
-          "RcppRoll","dataRetrieval","downloadthis","rvest","httr",
-          "mapmisc","future","future.apply","flextable","ggplot2", "sf", "raster",
-          "terra"), repos = "https://cloud.r-project.org")'
+        install.packages(c("remotes","reshape2","plyr","zoo",
+        "RcppRoll","dataRetrieval","downloadthis","rvest","httr",
+        "mapmisc","future","future.apply","flextable","ggplot2"))
 
-          Rscript -e 'install.packages("remotes")'
-          Rscript -e 'remotes::install_github(SwampThingPaul/AnalystHelper")'  # replace with your GitHub package
-          Rscript -e 'remotes::install_github(SwampThingPaul/EVERSpatDat")'  # replace with your GitHub package
+        remotes::install_github("SwampThingPaul/AnalystHelper")
+        remotes::install_github("SwampThingPaul/EVERSpatDat")
+        install.packages('sf', type = "binary")
+        install.packages('terra', repos = c('https://rspatial.r-universe.dev', 'https://cloud.r-project.org'))
+        install.packages('raster', repos = c('https://rspatial.r-universe.dev', 'https://cloud.r-project.org'))
 
     - name: Render Quarto project
       run: quarto render
         
     - name: Commit and push changes
       run: |
-          git config user.name "SwampThingPaul"
-          git config user.email "<>"
-          git add -A
-          git commit -m "Auto render site $(date -u +'%Y-%m-%d')" || echo "No changes to commit"
-          git push
+        git config user.name "SwampThingPaul"
+        git config user.email "<>"
+        git add -A 
+        git commit -m 'update report' || echo "No changes to commit"
+        git pull --rebase origin master # git pull --ff-only
+        git push origin || echo "No changes to commit"
           
     - name: Publish Quarto site to GitHub Pages
       uses: quarto-dev/quarto-actions/publish@v2
