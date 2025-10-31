@@ -13,6 +13,9 @@ knitr:
     warning: false
 editor_options: 
   chunk_output_type: console
+execute: 
+  freeze: true
+
 ---
 
 ```{r date,echo=FALSE,message=FALSE,warning=FALSE}

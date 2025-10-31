@@ -20,11 +20,11 @@ website:
     style: "docked"
     search: true
     contents: 
-      - href: KCOL.qmd
+      - href: 404.qmd # KCOL.qmd
         text: Kissimmee Chain of Lakes
       - href: KRR.qmd
         text: Kissimmee River
-      - href: LOK.qmd
+      - href: 404.qmd #LOK.qmd
         text: Lake Okeechobee
       - href: Estuaries.qmd
         text: Northern Estuaries
@@ -53,7 +53,7 @@ format:
   html:
     grid:
       sidebar-width: 400px
-      #margin-width: 50px
+      margin-width: 275px
       gutter-width: 1em
     page-layout: full
     theme: cosmo
