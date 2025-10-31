@@ -8,12 +8,13 @@ workflow_dispatch:  # allow manual runs
   
 jobs:
   render:
-  runs-on: ubuntu-latest
+    name: Render report
+    runs-on: ubuntu-latest
 
   permissions:
     contents: write  # allows committing rendered files
 
-  steps:
+    steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
@@ -31,26 +32,40 @@ jobs:
             libgeos-dev \
             libproj-dev \
             libudunits2-dev
+            
+    - name: Cache R packages
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-R-${{ hashFiles('**/*.R', '**/*.Rmd') }}
+        restore-keys: |
+          ${{ runner.os }}-r-
 
-      - name: Install R packages (CRAN + GitHub)
-        run: |
+    - name: Install R packages (CRAN + GitHub)
+      run: |
           Rscript -e 'install.packages(c("remotes","reshape2","plyr","zoo",
           "RcppRoll","dataRetrieval","downloadthis","rvest","httr",
-         "mapmisc","future","future.apply","flextable","ggplot2", "sf", "raster",
-         "terra"), repos = "https://cloud.r-project.org")'
+          "mapmisc","future","future.apply","flextable","ggplot2", "sf", "raster",
+          "terra"), repos = "https://cloud.r-project.org")'
 
-          # Example: install a GitHub package
-          Rscript -e 'if (!requireNamespace("remotes")) install.packages("remotes")'
+          Rscript -e 'install.packages("remotes")'
           Rscript -e 'remotes::install_github(SwampThingPaul/AnalystHelper")'  # replace with your GitHub package
           Rscript -e 'remotes::install_github(SwampThingPaul/EVERSpatDat")'  # replace with your GitHub package
 
-      - name: Render Quarto project
-        run: quarto render
-
-      - name: Commit and push changes
-        run: |
+    - name: Render Quarto project
+      run: quarto render
+        
+    - name: Commit and push changes
+      run: |
           git config user.name "SwampThingPaul"
           git config user.email "<>"
           git add -A
           git commit -m "Auto render site $(date -u +'%Y-%m-%d')" || echo "No changes to commit"
           git push
+          
+    - name: Publish Quarto site to GitHub Pages
+      uses: quarto-dev/quarto-actions/publish@v2
+      with:
+        target: gh-pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
