@@ -1,10 +1,11 @@
 name: Render and Deploy Quarto Site
 
-on:
-  push:
-  schedule:
-  # Runs every day at 12:30 AM UTC (0830 EST)
-    - cron: "30 12 * * *"
+on: [workflow_dispatch] 
+# on:
+#   push:
+#   schedule:
+#   # Runs every day at 12:30 AM UTC (0830 EST)
+#     - cron: "30 12 * * *"
 
 permissions:
   contents: write  # allows committing rendered files
