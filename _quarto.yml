@@ -9,7 +9,7 @@ project:
     # - EAA.qmd
     # - STAs.qmd
     # - ENP.qmd
-    # - Estuaries.qmd
+    - Estuaries.qmd
     # - habs.qmd
     - 404.qmd
     - enso.qmd
@@ -49,10 +49,10 @@ website:
         text: Kissimmee River
       - href: LOK.qmd 
         text: Lake Okeechobee
-      - href: 404.qmd # Estuaries.qmd
+      - href: Estuaries.qmd
         text: Northern Estuaries
-      - href: 404.qmd # habs.qmd
-        text: HABs (Redtide and Cyano)
+     # - href: 404.qmd # habs.qmd
+     #   text: HABs (Redtide and Cyano)
       - href: 404.qmd # EAA.qmd
         text: EAA
       - href: 404.qmd # STAs.qmd

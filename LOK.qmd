@@ -18,8 +18,8 @@ execute:
 ---
 
 ```{r date,echo=FALSE,message=FALSE,warning=FALSE}
-up.date=format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
-up.date=as.POSIXct(up.date,tz="America/New_York")
+up.date <- format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
+up.date <- as.POSIXct(up.date,tz="America/New_York")
 
 dst.check=c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
 # knitr::opts_chunk$set(echo=FALSE,
@@ -778,7 +778,9 @@ merge(lok.stg,LOK_Q,
            value=as_paragraph("Aggregated from ",paste(LOKOUT,collapse = ", ")),ref_symbols =c(" B "))|>
   footnote(j="store_vol_kacft",part="header",
            value=as_paragraph("Estimated storage volume based Stage-Volume relationship presented in Table 7-8 of LOSOM WCP."),ref_symbols =c(" C "))
-  
-  
 
 ```
+
+*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")` &nbsp;•&nbsp; Data through: `r format(YEST, "%b %d, %Y")`*
+
+***

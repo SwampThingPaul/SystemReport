@@ -98,7 +98,7 @@ jobs:
         run: quarto render
 
       # publish _site to the gh-pages branch.
-      # render: false because Stage 3 already rendered; keeping them
+      # render: false because already rendered; keeping them
       # separate keeps failures attributable (render bug vs push/auth bug).
 
       - name: Publish to gh-pages
