@@ -99,5 +99,5 @@ Q_cols <- c("dodgerblue1","indianred1","forestgreen")
 **Work in progress**
 
 ```{r test, dpi=96,fig.width=6.5,fig.height=4.5}
-plot(rnorn(100))
+plot(rnorm(100))
 ```
