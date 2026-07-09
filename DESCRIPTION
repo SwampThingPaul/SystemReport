@@ -34,7 +34,8 @@ Imports:
     viridis,
     viridisLite,
     wesanderson,
-    zoo
+    zoo,
+    remotes
 Suggests:
     DBI,
     RSQLite,
