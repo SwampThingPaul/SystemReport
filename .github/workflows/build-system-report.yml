@@ -81,11 +81,12 @@ jobs:
 
       # Stage 1 — data acquisition (the ONLY step that touches the network)
       - name: Fetch data
-        run: Rscript src/01_fetch_data.R
+        shell: Rscript{0}
+        run: source("./src/01_fetch_data.R", echo = TRUE)
 
       - name: Upload fetch manifest
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: fetch-manifest-${{ github.run_number }}
           path: data/raw/fetch_manifest.csv
@@ -93,19 +94,32 @@ jobs:
           retention-days: 14
 
       - name: Render site
+        shell: cmd
         run: quarto render
+
+      # publish _site to the gh-pages branch.
+      # render: false because Stage 3 already rendered; keeping them
+      # separate keeps failures attributable (render bug vs push/auth bug).
+
+      - name: Publish to gh-pages
+        uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
+          render: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # PUBLISH — same two options as before:
       #   (A) gh-pages branch:  quarto publish gh-pages --no-render --no-browser
       #   (B) output-dir docs + Pages "master /docs": swap _site for docs
-      - name: Commit rendered site
-        run: |
-          git config core.autocrlf input          # <- prevents CRLF churn
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _site plots
-          git diff --cached --quiet || git commit -m "Daily report $(date +'%Y-%m-%d %H:%M %Z')"
-          git push
+      # - name: Commit rendered site
+      #   run: |
+      #     git config core.autocrlf input          # <- prevents CRLF churn
+      #     git config user.name  "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add _site plots
+      #     git diff --cached --quiet || git commit -m "Daily report $(date +'%Y-%m-%d %H:%M %Z')"
+      #     git push
 
       - name: Upload logs on failure
         if: failure()
