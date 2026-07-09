@@ -1,0 +1,47 @@
+Package: SystemCondtions
+Type: project
+Title: Everglades System Conditions Report
+Version: 1.0.0
+Authors@R: person("Paul", "Julian", role = c("aut", "cre"),
+    email = "you@example.com")
+Description: Daily automated report aggregating hydrologic, water quality,
+    and harmful algal bloom conditions across Lake Okeechobee, the Northern
+    Estuaries, and the Greater Everglades from USACE, SFWMD, FWC, USGS, and
+    NOAA data sources. This DESCRIPTION exists for dependency management
+    (pak / r-lib actions), not for building an installable package.
+License: file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 4.2)
+Imports:
+    AnalystHelper,
+    EVERSpatDat,
+    dataRetrieval (>= 2.7.18),
+    downloadthis,
+    flextable,
+    future,
+    future.apply,
+    ggplot2,
+    knitr,
+    mapmisc,
+    plyr,
+    RcppRoll,
+    reshape2,
+    rmarkdown,
+    rvest,
+    sf,
+    terra,
+    viridis,
+    viridisLite,
+    wesanderson,
+    zoo
+Suggests:
+    DBI,
+    RSQLite,
+    lubridate,
+    paletteer,
+    quarto,
+    raster
+Remotes:
+    SwampThingPaul/AnalystHelper,
+    SwampThingPaul/EVERSpatDat

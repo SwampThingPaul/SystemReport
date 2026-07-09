@@ -1,0 +1,157 @@
+# .github/workflows/build-system-report.yml
+#
+# Everglades System Conditions Report — Quarto site (SystemReport repo).
+#
+# Pipeline: fetch (all network I/O) -> process -> render per-page -> commit.
+# Design points:
+#   * Each stage is its own step: failures are attributable at a glance.
+#   * The fetch manifest uploads on EVERY run, success or failure.
+#   * Pages render individually with failure tolerance: a broken WCAs.qmd
+#     logs a warning and the previously committed WCAs.html stays live,
+#     while every other page updates normally. Hard failure only if
+#     index.qmd breaks or nothing renders.
+#   * TZ pinned — runners are UTC; without this, evening runs compute
+#     YEST off by one and every 'Date == YEST' derived value shifts.
+#   * REQUIRES: _quarto.yml with `output-dir: docs` (committed site), and
+#     GitHub Pages configured to serve from main:/docs.
+
+name: Build System Report
+
+on:
+  push:
+  schedule:
+    - cron: "30 10 * * *"        # 10:30 UTC = 6:30 ET (EDT) / 5:30 ET (EST)
+  workflow_dispatch:
+    inputs:
+      full_render:
+        description: "Render entire site (required after _quarto.yml / sidebar changes)"
+        type: boolean
+        default: false
+
+# Never let a manual run overlap the scheduled one — both push to main.
+concurrency:
+  group: system-report-build
+  cancel-in-progress: false
+
+env:
+  TZ: America/New_York
+  FRESHNESS_STRICT: "false"      # "true" -> fetch step aborts when key gauges are stale
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write            # push rendered docs/ + updated accumulators
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true  # binary CRAN packages -> fast installs
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: "1.6.42"      # PIN to match `quarto --version` locally.
+                                 # (Draft site was built with 1.3.450 — update
+                                 # locally first, then keep the two in sync.)
+
+      # Reads DESCRIPTION at repo root: CRAN deps, the two SwampThingPaul/*
+      # GitHub remotes, and Ubuntu system libs for sf/terra (GDAL/GEOS/PROJ).
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          cache-version: 1
+
+      # HAB GeoTIFFs accumulate; cache them instead of committing.
+      # Unique key + restore-keys prefix = always restore newest, always
+      # save an updated copy at job end.
+      # - name: Restore HAB raster cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: RSdata
+      #     key: rsdata-${{ github.run_id }}
+      #     restore-keys: |
+      #       rsdata-
+
+      # Stage 1 — data acquisition (the ONLY step that touches the network)
+      - name: Fetch data
+        run: Rscript src/01_fetch_data.R
+
+      - name: Upload fetch manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fetch-manifest-${{ github.run_number }}
+          path: data/raw/fetch_manifest.csv
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # Stage 3 — render
+      # Full render: after _quarto.yml or sidebar changes (nav is baked into
+      # every page, so per-page renders would leave other pages' nav stale).
+      - name: Render full site
+        if: ${{ inputs.full_render == true }}
+        run: quarto render
+
+      # Daily render: page by page, tolerant. A failing page emits a
+      # warning annotation and keeps its previously committed HTML.
+      - name: Render pages
+        if: ${{ inputs.full_render != true }}
+        run: |
+          set +e
+          PAGES="index.qmd LOK.qmd WCAs.qmd EAA.qmd STAs.qmd ENP.qmd Estuaries.qmd habs.qmd enso.qmd"
+          FAILED=""
+          RENDERED=0
+          for f in $PAGES; do
+            [ -f "$f" ] || continue
+            echo "::group::quarto render $f"
+            quarto render "$f"
+            status=$?
+            echo "::endgroup::"
+            if [ $status -ne 0 ]; then
+              echo "::warning file=$f::Render failed — previous version of this page remains live"
+              FAILED="$FAILED $f"
+            else
+              RENDERED=$((RENDERED+1))
+            fi
+          done
+
+          {
+            echo "## Render summary"
+            echo ""
+            echo "* Rendered OK: $RENDERED page(s)"
+            if [ -n "$FAILED" ]; then
+              echo "* **Failed (stale pages left in place):**$FAILED"
+            else
+              echo "* Failed: none"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Hard-fail conditions: the landing page broke, or nothing built.
+          case " $FAILED " in *" index.qmd "*) exit 1;; esac
+          [ "$RENDERED" -gt 0 ] || exit 1
+
+      # ------------------------------------------------------------------
+      # Publish: commit rendered site + small accumulators back to main
+      # ------------------------------------------------------------------
+      - name: Commit site
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs cyano_area.csv
+          # _freeze/ holds execution results for freeze:true (static) pages;
+          # commit it if present so CI never needlessly re-executes them.
+          [ -d _freeze ] && git add _freeze
+          git diff --cached --quiet || git commit -m "Daily report $(date +'%Y-%m-%d %H:%M %Z')"
+          git push
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-logs-${{ github.run_number }}
+          path: |
+            data/raw/fetch_manifest.csv
+            *.log
+          if-no-files-found: ignore

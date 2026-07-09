@@ -11,3 +11,4 @@ build_notes.txt
 /data_raw/
 /ExportGIS/
 /data/
+**/*.quarto_ipynb

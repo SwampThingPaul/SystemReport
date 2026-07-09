@@ -1,5 +1,27 @@
 project:
   type: website
+  render: 
+    # - "*.qmd"
+    # - "!archive/"
+    - index.qmd
+    - LOK.qmd
+    # - WCAs.qmd
+    # - EAA.qmd
+    # - STAs.qmd
+    # - ENP.qmd
+    # - Estuaries.qmd
+    # - habs.qmd
+    - enso.qmd
+    - WLCon.qmd
+    - datProc.qmd
+    
+execute:
+  freeze: false          # default: data pages re-execute every run
+  echo: false
+  warning: false
+  message: false         # (also silences the `[1] 1 [1] 2 ...` loop output
+                         #  currently visible on the live LOK.html draft —
+                         #  though drop the stray print() too)
 
 website:
   title: "Everglades System Conditions Report"
@@ -22,28 +44,28 @@ website:
     contents: 
       - href: 404.qmd # KCOL.qmd
         text: Kissimmee Chain of Lakes
-      - href: KRR.qmd
+      - href: 404.qmd # KRR.qmd
         text: Kissimmee River
-      - href: 404.qmd #LOK.qmd
+      - href: LOK.qmd 
         text: Lake Okeechobee
-      - href: Estuaries.qmd
+      - href: 404.qmd # Estuaries.qmd
         text: Northern Estuaries
-      - href: habs.qmd
+      - href: 404.qmd # habs.qmd
         text: HABs (Redtide and Cyano)
-      - href: EAA.qmd
+      - href: 404.qmd # EAA.qmd
         text: EAA
-      - href: STAs.qmd
+      - href: 404.qmd # STAs.qmd
         text: STAs
-      - href: WCAs.qmd
+      - href: 404.qmd # WCAs.qmd
         text: WCAs
-      - href: ENP.qmd
+      - href: 404.qmd # ENP.qmd
         text: ENP
       - href: enso.qmd
         text: Climate Information
       - href: WLCon.qmd
         text: Stage Datum
-      - href: datProc.qmd
-        text: Data Source and Info
+      # - href: datProc.qmd
+      #   text: Data Source and Info
   page-footer: 
    border: true
    left: "Published with [Quarto](https://quarto.org/)"
