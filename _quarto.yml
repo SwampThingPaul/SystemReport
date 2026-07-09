@@ -17,7 +17,7 @@ project:
     - datProc.qmd
     
 execute:
-  freeze: false          # default: data pages re-execute every run
+  # freeze: false          # default: data pages re-execute every run
   echo: false
   warning: false
   message: false         # (also silences the `[1] 1 [1] 2 ...` loop output

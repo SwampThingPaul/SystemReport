@@ -1,0 +1,17 @@
+{
+  "hash": "77464fb0128b9f74a40256c66870597a",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Northern Estuaries\"\nformat:\n  html:\n    toc: true\n    dev: png\n    type: cairo\nencoding: UTF-8\nknitr:\n  opts_chunk:\n    echo: false\n    message: false\n    warning: false\neditor_options: \n  chunk_output_type: console\nexecute: \n  freeze: true\n---\n\n\n::: {.cell}\n\n:::\n\n\n\n::: {.cell}\n\n:::\n\n\n*Page rendered: Jul 09, 2026 15:05 EDT &nbsp;•&nbsp; Data through: Jul 08, 2026*\n\n**Work in progress**\n\n\n::: {.cell}\n::: {.cell-output-display}\n![](Estuaries_files/figure-html/test-1.png){width=624}\n:::\n:::\n",
+    "supporting": [
+      "Estuaries_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
