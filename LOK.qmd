@@ -44,7 +44,7 @@ library(sf)
 library(EVERSpatDat)
 library(mapmisc)
 library(flextable)
-library(tmap)
+# library(tmap)
 
 library(ggplot2)
 theme_set(theme_minimal(base_size = 16)+#,base_family = "serif")+
@@ -53,7 +53,7 @@ theme_set(theme_minimal(base_size = 16)+#,base_family = "serif")+
 
 utm17<-st_crs("EPSG:26917");# CRS for NAD83 UTM17
 
-tmap_mode("view")
+# tmap_mode("view")
 # Functions  ----------------------------------------------------------------
 heck_nice <- function(x,round){
       e <- floor(log10(x))
