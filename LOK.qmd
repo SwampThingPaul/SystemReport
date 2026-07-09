@@ -599,13 +599,13 @@ subset(lok.stg,DOWY==hydro.day(YEST)&WY>=CurWY-3)|>
   colformat_double(j=2,big.mark="",digits=0)|>
   colformat_num(j=3:5,na_str="- NR -")|>
   padding(padding=1,part="all")|>
-  font(fontname="Times New Roman",part="all")|>
+  # font(fontname="Times New Roman",part="all")|>
   fontsize(size=12,part="body")|>
   fontsize(size=13,part="header")|>
   bold(part="header")|>
   set_header_labels("DATE"="Date\n(Month-Day)",
                     "WY"="Water Year",
-                    "LOK.stage"="Stage\n(ft, NGVD29)",
+                    "Mean"="Stage\n(ft, NGVD29)",
                     "recess_7day"="7-Day Recession Rate\n(ft 7-d\u207B\u00B9)",
                     "recess_30day"="30-Day Recession Rate\n(ft 30-d\u207B\u00B9)")|>
   bg(i=~WY==CurWY,part="body",bg="wheat")
@@ -774,7 +774,7 @@ merge(lok.stg,LOK_Q,
                     "diff_store" = "\u0394 Storage (kAcft)")|>
   footnote(j="LOKIN.kacft",part="header",
            value=as_paragraph("Aggregated from ",paste(LOKIN,collapse = ", ")),ref_symbols =c(" A "))|>
-  footnote(j="LOKIN.kacft",part="header",
+  footnote(j="LOKOUT.kacft",part="header",
            value=as_paragraph("Aggregated from ",paste(LOKOUT,collapse = ", ")),ref_symbols =c(" B "))|>
   footnote(j="store_vol_kacft",part="header",
            value=as_paragraph("Estimated storage volume based Stage-Volume relationship presented in Table 7-8 of LOSOM WCP."),ref_symbols =c(" C "))

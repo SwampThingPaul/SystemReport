@@ -11,6 +11,7 @@ project:
     # - ENP.qmd
     # - Estuaries.qmd
     # - habs.qmd
+    - 404.qmd
     - enso.qmd
     - WLCon.qmd
     - datProc.qmd
