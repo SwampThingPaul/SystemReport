@@ -79,19 +79,20 @@ jobs:
       #     restore-keys: |
       #       rsdata-
 
-      # Stage 1 — data acquisition (the ONLY step that touches the network)
-      - name: Fetch data
-        shell: Rscript {0}
-        run: source("src/01_fetch_data.R")
-
-      - name: Upload fetch manifest
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fetch-manifest-${{ github.run_number }}
-          path: data/raw/fetch_manifest.csv
-          if-no-files-found: ignore
-          retention-days: 14
+      # data acquisition (the ONLY step that touches the network)
+      ## commented out for now. 
+      # - name: Fetch data
+      #   shell: Rscript {0}
+      #   run: source("src/01_fetch_data.R")
+      # 
+      # - name: Upload fetch manifest
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: fetch-manifest-${{ github.run_number }}
+      #     path: data/raw/fetch_manifest.csv
+      #     if-no-files-found: ignore
+      #     retention-days: 14
 
       - name: Render site
         shell: cmd
