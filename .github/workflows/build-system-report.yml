@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload fetch manifest
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fetch-manifest-${{ github.run_number }}
           path: data/raw/fetch_manifest.csv
