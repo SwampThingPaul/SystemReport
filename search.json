@@ -22,6 +22,27 @@
     ]
   },
   {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Everglades System Conditions Report",
+    "section": "",
+    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\n\n\nSFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
+  },
+  {
+    "objectID": "index.html#purpose",
+    "href": "index.html#purpose",
+    "title": "Everglades System Conditions Report",
+    "section": "",
+    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change."
+  },
+  {
+    "objectID": "index.html#data-sources",
+    "href": "index.html#data-sources",
+    "title": "Everglades System Conditions Report",
+    "section": "",
+    "text": "SFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
+  },
+  {
     "objectID": "LOK.html",
     "href": "LOK.html",
     "title": "Lake Okeechobee",
@@ -53,27 +74,6 @@
       "Home",
       "Lake Okeechobee"
     ]
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Everglades System Conditions Report",
-    "section": "",
-    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\n\n\nSFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
-  },
-  {
-    "objectID": "index.html#purpose",
-    "href": "index.html#purpose",
-    "title": "Everglades System Conditions Report",
-    "section": "",
-    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change."
-  },
-  {
-    "objectID": "index.html#data-sources",
-    "href": "index.html#data-sources",
-    "title": "Everglades System Conditions Report",
-    "section": "",
-    "text": "SFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,"
   },
   {
     "objectID": "enso.html",
