@@ -82,7 +82,7 @@ jobs:
       # Stage 1 — data acquisition (the ONLY step that touches the network)
       - name: Fetch data
         shell: Rscript {0}
-        run: source("./src/01_fetch_data.R")
+        run: source("src/01_fetch_data.R")
 
       - name: Upload fetch manifest
         if: always()
