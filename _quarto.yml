@@ -26,6 +26,7 @@ execute:
 
 website:
   title: "Everglades System Conditions Report"
+  site-url: https://swampthingecology.org/SystemReport/
   navbar:
     tools:
       - icon: github
