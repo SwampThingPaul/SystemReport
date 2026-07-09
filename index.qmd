@@ -9,6 +9,11 @@ website:
 
 ```{r,echo=FALSE,fig.align="center"}
 knitr::include_graphics("images/OverviewMap.png")
+
+library(AnalystHelper)
+
+End.Date   <- date.fun(Sys.Date() - 1)
+YEST       <- End.Date
 ```
 
 :::
@@ -31,7 +36,7 @@ This webpage/report is intended to aggregate information from different agencies
 :::
 
 ::: 
-
+*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")` &nbsp;•&nbsp; Data through: `r format(YEST, "%b %d, %Y")`*
 <!-- ## System Snapshot -->
 
 <!-- Include a green/red light (below/above regulation schedule) map for each area?  -->
