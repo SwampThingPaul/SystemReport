@@ -21,7 +21,7 @@ editor_options:
 up.date <- format(Sys.time(),tz="America/New_York",usetz=T,"%F %R")
 up.date <- as.POSIXct(up.date,tz="America/New_York")
 
-dst.check=c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
+dst.check <- c(NA,FALSE,TRUE)[as.POSIXlt(up.date)$isdst+2]# from lubridate::dst(...) code
 # knitr::opts_chunk$set(echo=FALSE,
 #                       message=FALSE,
 #                       warning=FALSE,
@@ -781,6 +781,7 @@ merge(lok.stg,LOK_Q,
 
 ```
 
+***
+
 *Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")` &nbsp;•&nbsp; Data through: `r format(YEST, "%b %d, %Y")`*
 
-***
