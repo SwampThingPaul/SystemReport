@@ -26,7 +26,7 @@
     "href": "LOK.html",
     "title": "Lake Okeechobee",
     "section": "",
-    "text": "Updated: 2026-07-10 08:29:00 EDT",
+    "text": "Updated: 2026-07-10 08:53:00 EDT",
     "crumbs": [
       "Home",
       "Lake Okeechobee"
@@ -48,7 +48,7 @@
     "href": "LOK.html#discharge",
     "title": "Lake Okeechobee",
     "section": "Discharge",
-    "text": "Discharge\n\n\n\n\n\nTotal Lake Okeechobee inflow and outflow volume for measured inflow/ouflows. Data Source: SFWMD DBHydro .\n\n\n\n\n\n\nInflow, outflow, storage and change in storage for the past\n7-days.DateLake Stage(Ft, NGVD29)Measured Inflow(kAcft d⁻¹) A Measured Outflow(kAcft d⁻¹) B EstimatedStorage Volume (kAcft) C Δ Storage (kAcft)2026-07-0210.860.411.012194-3.372026-07-0310.850.460.612190-3.372026-07-0410.870.460.0721976.752026-07-0510.880.320.0022003.372026-07-0610.922.340.00221413.542026-07-0710.954.570.00222410.192026-07-0810.962.280.0022283.402026-07-0910.990.730.02223810.19 A Aggregated from FECSR70, S71, S72, S84, S84X, S65E, S65EX1 B Aggregated from S77, S354, S351, S352, S271, S308 C Estimated storage volume based Stage-Volume relationship presented in Table 7-8 of LOSOM WCP.\n\n\n\nPage rendered: Jul 10, 2026 12:29 UTC  •  Data through: Jul 09, 2026",
+    "text": "Discharge\n\n\n\n\n\nTotal Lake Okeechobee inflow and outflow volume for measured inflow/ouflows. Data Source: SFWMD DBHydro .\n\n\n\n\n\n\nInflow, outflow, storage and change in storage for the past\n7-days.DateLake Stage(Ft, NGVD29)Measured Inflow(kAcft d⁻¹) A Measured Outflow(kAcft d⁻¹) B EstimatedStorage Volume (kAcft) C Δ Storage (kAcft)2026-07-0210.860.411.012194-3.372026-07-0310.850.460.612190-3.372026-07-0410.870.460.0721976.752026-07-0510.880.320.0022003.372026-07-0610.922.340.00221413.542026-07-0710.954.570.00222410.192026-07-0810.962.280.0022283.402026-07-0910.990.730.02223810.19 A Aggregated from FECSR70, S71, S72, S84, S84X, S65E, S65EX1 B Aggregated from S77, S354, S351, S352, S271, S308 C Estimated storage volume based Stage-Volume relationship presented in Table 7-8 of LOSOM WCP.\n\n\n\nPage rendered: Jul 10, 2026 12:53 UTC  •  Data through: Jul 09, 2026",
     "crumbs": [
       "Home",
       "Lake Okeechobee"
@@ -59,7 +59,7 @@
     "href": "index.html",
     "title": "Everglades System Conditions Report",
     "section": "",
-    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\n\n\nSFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,\nPage rendered: Jul 10, 2026 12:29 UTC  •  Data through: Jul 09, 2026"
+    "text": "This webpage/report is intended to aggregate information from different agencies (i.e. USACE, SFWMD, FWC, USGS and NOAA) into one spot to help inform local government agencies and stakeholders on conditions within Lake Okeechobee, the Northern Estuaries and the Everglades ecosystem. The data provided here should be considered preliminary and are subject to change.\n\n\n\n\nSFWMD: DBHYDRO\nFFWCC: Red Tide\nUSGS: NWIS\nUSACE: SAJ Water Management\nNOAA: Buoy Center, HABSOS, LOK BGA, SWFL HAB,\nPage rendered: Jul 10, 2026 12:53 UTC  •  Data through: Jul 09, 2026"
   },
   {
     "objectID": "index.html#purpose",
@@ -80,7 +80,7 @@
     "href": "Estuaries.html",
     "title": "Northern Estuaries",
     "section": "",
-    "text": "Page rendered: Jul 10, 2026 12:29 UTC  •  Data through: Jul 09, 2026\nWork in progress",
+    "text": "Page rendered: Jul 10, 2026 12:53 UTC  •  Data through: Jul 09, 2026\nWork in progress",
     "crumbs": [
       "Home",
       "Northern Estuaries"
