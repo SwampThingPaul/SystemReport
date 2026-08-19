@@ -10,7 +10,7 @@ build_notes.txt
 /src/archive
 /data_raw/
 /ExportGIS/
-/data/
+# /data/
 **/*.quarto_ipynb
 _site/
 .quarto/
