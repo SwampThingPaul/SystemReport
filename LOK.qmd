@@ -523,7 +523,7 @@ tmp.sch  <-  subset(LOSOM.sch.bk2,Date == YEST)
 
 zone_order <- c("ZONE.A", "ZONE.BC", "ZONE.D")
 tmp.sch <- tmp.sch[order(match(tmp.sch$Zone, zone_order)), ]
-stage <- tmp.dat$Mean
+stage <- if(is.na(tmp.dat$Mean)){tmp.dat$inter.stage}else{tmp.dat$Mean}
 idx <- which(stage >= tmp.sch$reg.STG)[1]
 
 # If stage is below all zone floors, compare against the lowest floor
@@ -575,7 +575,7 @@ get_reg_zone <- function(stage, sch_day,
   )
 }
 
-lok_zone_calc <- get_reg_zone(subset(lok.stg,Date==YEST)$Mean,
+lok_zone_calc <- get_reg_zone(stage,# subset(lok.stg,Date==YEST)$Mean,
                                subset(LOSOM.sch.bk2,Date == YEST),
                                zone_order = c("ZONE.A", "ZONE.BC", "ZONE.D"))
 
@@ -584,7 +584,6 @@ lok_zone_calc <- get_reg_zone(subset(lok.stg,Date==YEST)$Mean,
 For details on the current Lake Okeechobee Regulation Schedule, please refer to the Lake Okeechobee System Operating Manual Water Control Plan ([LOSOM WCP](./_docs/2024_LOSOM_WCP.pdf)).
 
 Currently, Lake Okeechobee is `r paste0(lok_zone_calc$statement)` of the LOSOM regulation schedule. The current average lake stage is `r paste0(format(lok_zone_calc$stage,nsmall = 2)," Ft NGVD29")`.
-
 
 ```{r table1, fig.align='center'}
 #| tbl-cap-location: top
@@ -713,7 +712,6 @@ ggplot(lok.stg, aes(x = DOWY, y = WY, fill = stg.cat)) +
 
 ```
 
-
 ## Discharge
 
 ```{r LOK_Q,dev="png", echo=FALSE,fig.width=6,fig.height=4.5,fig.align='center',fig.cap="Total Lake Okeechobee inflow and outflow volume for measured inflow/ouflows. Data Source: SFWMD DBHydro ."}
@@ -781,7 +779,6 @@ merge(lok.stg,LOK_Q,
 
 ```
 
-***
+------------------------------------------------------------------------
 
-*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")` &nbsp;•&nbsp; Data through: `r format(YEST, "%b %d, %Y")`*
-
+*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")`  •  Data through: `r format(YEST, "%b %d, %Y")`*

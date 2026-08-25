@@ -33,6 +33,7 @@ library(sf)
 library(EVERSpatDat)
 library(mapmisc)
 library(flextable)
+library(zoo)
 # library(tmap)
 
 library(ggplot2)
@@ -92,12 +93,588 @@ stage_yrs <- c(CurWY-2, CurWY-1, CurWY)
 stage_cols <- c(adjustcolor(c("forestgreen","blue"), 0.5), "red")
 
 Q_cols <- c("dodgerblue1","indianred1","forestgreen")
+
+# discharge data --------------------------------------------
+Qdbkeys <- readRDS("data/raw/qdbkeys.rds")
+Qdbkeys.melt <- reshape(
+  Qdbkeys,
+  varying = list(c("DA","BK")),# list(names(Qdbkeys)[2:3]), # columns to melt
+  v.names = "DBKEY",                   # name for measurement values
+  timevar = "freq",                    # name for the new column holding old col names
+  times = c("DA","BK"),# names(Qdbkeys)[2:3],         # actual names from original columns
+  direction = "long"
+)
+row.names(Qdbkeys.melt) <- NULL
+Qdbkeys.melt <- subset(Qdbkeys.melt,!is.na(DBKEY))
+
+Qdat <- readRDS("data/raw/Qdat.rds")|>
+  merge(Qdbkeys.melt,'DBKEY',all.x=T)
+
+
 ```
 
-*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")` &nbsp;•&nbsp; Data through: `r format(YEST, "%b %d, %Y")`*
+# Caloosahatchee River Estuary
 
-**Work in progress**
+## Discharge Conditions
 
-```{r test, dpi=96,fig.width=6.5,fig.height=4.5}
-plot(rnorm(100))
+```{r CRE Q, echo = FALSE}
+CRE_locs <- c("S79","S78","S77")
+CRE_Qdat <- subset(Qdat,loc%in%CRE_locs)|>
+  dcast(Date+loc~DA_P,value.var = "Data.Value",mean,na.rm=T)
+
+CRE_Qdat$Data.Value <- apply(CRE_Qdat[c("P1","P2")], 1, function(x) x[!is.na(x)][1]);# if more P, just add
+
+# tom_locs<- Qdbkeys[!(Qdbkeys$DA%in%unique(Qdat$DBKEY)),]
+CRE_Qdat <- dcast(CRE_Qdat,Date~loc,value.var = "Data.Value", fun.aggregate = function(x) mean(cfs.to.acftd(x),na.rm=T))
+CRE_Qdat[is.na(CRE_Qdat)] <- 0; #replace any NAs with 0 
+
+for(col in CRE_locs){
+  CRE_Qdat[[paste0(col, ".cfs")]] <- CRE_Qdat[[col]] * (1/cfs.to.acftd(1))
+}
+
+CRE_Qdat$S77.cfs <- with(CRE_Qdat,ifelse(S77.cfs<0,0,S77.cfs))
+CRE_Qdat$C43 <- with(CRE_Qdat,ifelse(S79.cfs<S77.cfs,0,S79.cfs-S77.cfs))
+CRE_Qdat$WY <- WY(CRE_Qdat$Date)
+CRE_Qdat$DOWY <- hydro.day(CRE_Qdat$Date)
+
+CRE_Qdat$cum.S79 <- with(CRE_Qdat,ave(S79,WY,FUN = function(x)cumsum(ifelse(is.na(x),0,x))))
+CRE_Qdat$cum.S77 <- with(CRE_Qdat,ave(S77,WY,FUN = function(x)cumsum(ifelse(is.na(x),0,x))))
+CRE_Qdat$Q.14 <- rollapplyr(CRE_Qdat$S79.cfs,14,mean,na.rm=T,fill=NA)
+CRE_Qdat$S79Q.7 <- rollapplyr(CRE_Qdat$S79.cfs,7,mean,na.rm=T,fill=NA)
+CRE_Qdat$S77Q.7 <- rollapplyr(CRE_Qdat$S77.cfs,14,mean,na.rm=T,fill=NA)
+CRE_Qdat$Q.30 <- rollapplyr(CRE_Qdat$S79.cfs,30,mean,na.rm=T,fill=NA)
+CRE_Qdat$SalEnv.cat <- cut(CRE_Qdat$Q.14,
+                        breaks = c(-Inf, 750, 2100, 2600, Inf),
+                        labels = c("low", "optimum", "stress", "damaging"),
+                        right = FALSE
+                        )
+
+
+consec.startend <- function(var) {
+  runs <- rle(var)
+  idx <- which(runs$values == 1)
+  if (length(idx) == 0) return(list(starts = integer(0), ends = integer(0)))
+  
+  ends <- cumsum(runs$lengths)[idx]
+  starts <- ends - runs$lengths[idx] + 1
+  list(starts = starts, ends = ends)
+}
+
+# Define thresholds for each category
+thresholds <- list(
+  Low    = function(x) x < 750,
+  Opt    = function(x) x >= 750  & x < 2100,
+  Stress = function(x) x >= 2100 & x < 2600,
+  Dam    = function(x) x >= 2600
+)
+
+# Loop over categories to generate binary, consec, and sum.consec columns
+for (nm in names(thresholds)) {
+  # binary indicator
+  CRE_Qdat[[nm]] <- as.integer(thresholds[[nm]](CRE_Qdat$Q.14))
+  
+  # consecutive marker (1 within consecutive runs, 0 otherwise)
+  x <- CRE_Qdat[[nm]]
+  CRE_Qdat[[paste0(nm, ".consec")]] <- as.integer(x > 0 & (c(0, head(x, -1)) > 0 | c(0, head(x, -1)) == 0))
+  
+  # sum of each consecutive run
+  consec.val <- consec.startend(CRE_Qdat[[paste0(nm, ".consec")]])
+  CRE_Qdat[[paste0("sum.", nm, ".consec")]] <- 0
+  if (length(consec.val$ends) > 0) {
+    for (i in seq_along(consec.val$ends)) {
+      CRE_Qdat[consec.val$ends[i], paste0("sum.", nm, ".consec")] <-
+        sum(CRE_Qdat[consec.val$starts[i]:consec.val$ends[i], paste0(nm, ".consec")], na.rm = TRUE)
+    }
+  }
+}
+
+
+salenv.vals <- subset(CRE_Qdat,Date==max(CRE_Qdat$Date))
+
+salenv.vals1 <- salenv.vals[,paste("sum",c("Low","Opt","Stress","Dam"),"consec",sep=".")]
+colnames(salenv.vals1)=c("low","optimal","stress","damaging")
+
+flow.envs <- c("< 750","750 - 2100", "2100 - 2600","> 2600")
+env.cols <- c("red","green","orange","red")
+
 ```
+
+
+```{r, CREFlow, echo=FALSE,fig.width=7,fig.height=5,fig.align='center',fig.cap="Daily and 14-day moving average discharge for S-79 relative to the Northern Estuaries RECOVER performance measure for the recent 30-day period."}
+max.q <- max(subset(CRE_Qdat,Date%in%seq(date.fun(as.Date(Sys.Date())-30),date.fun(as.Date(Sys.Date())),"1 days"))[,c("S79.cfs","Q.14")],na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(1,0.5))
+par(mar=c(2,2,1,2),oma=c(0.5,3,1,2));
+plot(S79.cfs~Date,CRE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+xx <- c(xlim.val[1],xlim.val[1],xlim.val[2],xlim.val[2])
+yy3 <- c(2600,ylim.max,ylim.max,2600);polygon(x=xx,y=yy3,col=adjustcolor("red",0.5))
+yy4 <- c(2100,2600,2600,2100);polygon(x=xx,y=yy4,col=adjustcolor("yellow",0.5))
+yy5 <- c(750,2100,2100,750);polygon(x=xx,y=yy5,col=adjustcolor("green",0.5))
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+# abline(h=457,col="red")
+with(CRE_Qdat,pt_line(Date,S79.cfs,2,"black",1,21,"grey",cex=1.25,pt.lwd=0.1))
+with(CRE_Qdat,lines(Date,Q.14,lwd=3,col=adjustcolor("dodgerblue3",0.5)))
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d/%Y"),line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj,cex.axis=1)
+axis_fun(4,ymaj,ymin,format(round(cfs.to.acftd(ymaj)/1000,1)),cex.axis=1)
+
+box(lwd=1)
+mtext("Date\n(MM/DD/YYYY)",side=1,line=2.75,cex=1)
+mtext("Discharge (cfs)",side=2,line=3.5,cex=1)
+# mtext("Discharge (kAc-Ft D\u207B\u00B9)",side=4,line=2.5,cex=1.25)
+mtext(expression("Daily Discharge (x1000 Ac-Ft d"^" -1"*")"),side=4,line=2.5,cex=1)
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.25,0.75,
+       legend=c( "Damaging (>2600 cfs)","Stress (2100 - 2600 cfs)","Optimum (750 - 2100 cfs)"),pch=22,
+       pt.bg=adjustcolor(c("red","yellow","green"),0.5),pt.cex=2,ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=1,xpd=NA,xjust=0.5,title.adj = 0,title='RECOVER PM')
+
+legend(0.75,0.75,
+       legend=c("Daily Discharge (S79)","14-Day moving average"),
+       pch=c(21,NA),pt.bg=c("grey",NA),pt.cex=c(1.5,NA),
+       lty=c(NA,1),lwd=c(0.5,2),col=c("black",adjustcolor(c("dodgerblue1"),0.5)),
+       ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=1,xpd=NA,xjust=0.5,title.adj = 0,title='')
+
+```
+
+**Caloosahatchee Conditions Summary:** Flow to the Caloosahatchee
+Estuary had a 7-day average of
+**`r format(round(subset(CRE_Qdat,Date==date.fun(as.Date(End.Date)-1))$S79Q.7,0),big.mark=",")`
+cfs** at **S-79** with a 7-day average of
+**`r format(round(subset(CRE_Qdat,Date==date.fun(as.Date(End.Date)-1))$S77Q.7,0),big.mark=",")`
+cfs coming from the lake at** S-77**.** The 14-day moving average flow
+at S-79 is `r format(round(salenv.vals$Q.14),big.mark=",")` cfs and has
+been in the
+**`r paste0("<span style='color:",env.cols[which(salenv.vals1==max(salenv.vals1))],"'>")` `r names(salenv.vals1)[which(salenv.vals1==max(salenv.vals1))]`**
+</span> flow envelope
+(`r flow.envs[which(salenv.vals1==max(salenv.vals1))]` cfs; RECOVER
+2020) for
+`r as.numeric(salenv.vals1[which(salenv.vals1==max(salenv.vals1))])`
+days.
+
+
+```{r CRE_LOK_Q, echo=FALSE,fig.width=7,fig.height=4.5,fig.align='center',fig.cap="S-77 (from Lake Okeechobee) and S-79 (to Tidal Basin) flow data along the C-43 and Caloosahatchee River. C-43 Basin Flow was calculated as the difference from S-77 and S-79."}
+max.q <- max(subset(CRE_Qdat,Date%in%seq(date.fun(as.Date(Sys.Date())-30),date.fun(as.Date(Sys.Date())),"1 days"))[,c("S79.cfs","S77.cfs","S78.cfs")],na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(2,0.4))
+par(cex.axis=1.2,mar=c(2,2,1,1),oma=c(1,3,1,2));
+plot(S79.cfs~Date,CRE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+lines(S79.cfs~Date,CRE_Qdat,col=Q_cols[1],lwd=2)
+lines(S77.cfs~Date,CRE_Qdat,col=Q_cols[2],lwd=2,lty=2)
+lines(C43~Date,CRE_Qdat,col="black",lwd=2,lty=3)
+lines(S78.cfs~Date,CRE_Qdat,col="grey50",lwd=2)
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d/%Y"),line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj,cex.axis=1)
+box(lwd=1)
+mtext("Date\n(MM/DD/YYYY)",side=1,line=2.75,cex=1)
+mtext("Daily Discharge (cfs)",side=2,line=3.5,cex=1)
+
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.5,0.5,
+       legend=c("S-79 (to Estuary)","S-77 (from Lake)","C-43 Basin Flow","S-78"),
+       col=c(Q_cols[1:2],"black","grey50"),lty=c(1,2,3,1),lwd=2.5,
+       pt.cex=2.5,ncol=4,cex=1,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+
+```
+
+```{r CRE_cumQ, echo=FALSE,fig.width=7,fig.height=4.5,fig.align='center',fig.cap="Cumulative discharge for S-79 (to Tidal Basin) and S-77 (from Lake Okeechobee) for the last three Florida Water Years (May - April). Day of water year is analogous to day of year with Day 1 = May 1."}
+max.q <- max(CRE_Qdat$cum.S79,na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val=c(0,366);xmaj=seq(xlim.val[1],xlim.val[2],90);xmin=seq(xlim.val[1],xlim.val[2],30)
+cum_cols=c("indianred1","orange","dodgerblue1")
+
+layout(matrix(1:2,1,2,byrow=F),widths = c(1,1,0.5))
+par(mar=c(2,2,1,1),oma=c(1,3,1,2));
+
+plot(cum.S79~DOWY,CRE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+for(i in 1:3){
+  if(i==3){
+    lines(cum.S79~DOWY,subset(CRE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=2.5,col=cum_cols[i])}
+  else{
+    lines(cum.S79~DOWY,subset(CRE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=3,col=adjustcolor(cum_cols[i],0.5))
+    }
+}
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj/1000,cex.axis=1);box(lwd=1)
+mtext("Day of Water Year",side=1,line=2,cex=1)
+mtext(expression("Cumulative Discharge (x1000 Ac-Ft WY"^" -1"*")"),side=2,line=3.5,cex=1)
+mtext(side=3,"S-79",adj=0)
+
+plot(cum.S77~DOWY,CRE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+for(i in 1:3){
+  if(i==3){
+    lines(cum.S77~DOWY,subset(CRE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=2.5,col=cum_cols[i])}
+  else{
+    lines(cum.S77~DOWY,subset(CRE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=3,col=adjustcolor(cum_cols[i],0.5))
+  }
+}
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,NA);box(lwd=1)
+mtext("Day of Water Year",side=1,line=2,cex=1)
+mtext(side=3,"S-77",adj=0)
+
+#plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend("topright",
+       legend=c(paste0("WY",seq(CurWY-2,CurWY,1))),
+       col=cum_cols,lty=c(1),lwd=c(2.5),pt.cex=1,ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+```
+
+## Salinity
+
+```{r sal data,echo = FALSE}
+sal_dat <- readRDS("data/raw/sal_dat.rds")
+sal_dat_xtab <- dcast(sal_dat,loc+Date~param,value.var = "Data.Value",mean,na.rm=TRUE)
+sal_dat_xtab$calc_Sal <- with(sal_dat_xtab,
+                              ifelse(is.na(SAL),SalinityCalc(SPC,WT),SAL))
+sal_dat_xtab$DOY <- as.numeric(format(sal_dat_xtab$Date,"%j"))
+sal_dat_xtab$DOWY <- hydro.day(sal_dat_xtab$Date)
+sal_dat_xtab$WY <- WY(sal_dat_xtab$Date)
+```
+
+
+```{r CRE_Sal,echo=FALSE,fig.width=10,fig.height=5,fig.align='center',fig.cap="Daily average bottom salinity data for the last 14-days from sampling locations within the tidal Caloosahatchee River Estuary relative to oyster health (Sanibel, Shell Point and Cape Coral) and tape grass (<i>Vallisneria americana</i>) health (Ft. Myers only) conditions."}
+CALSITES <- c("SANIB2","MARKH","CCORAL","FORTMYERSM","S79")
+cre_sal <- subset(sal_dat_xtab,loc%in%CALSITES)
+
+fill <- expand.grid(loc=CALSITES,Date=date.fun(seq(Start.Date[1],YEST,"1 days")))
+fill$DOY <- as.numeric(format(fill$Date,"%j"))
+fill$DOWY <- hydro.day(fill$Date)
+fill$WY <- WY(fill$Date)
+cre_sal <- merge(cre_sal,fill,c("loc","Date","DOY","DOWY","WY"),all.y=T)
+
+## removed daily sample number screening
+cre_sal$MovingAvg.7d=with(cre_sal,ave(calc_Sal,loc,FUN=function(x) rollapplyr(x,7,mean,fill=NA)))
+
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+ylim.val <- c(0,max(cre_sal$calc_Sal,na.rm=T)*1.10);
+ylim.val2 <- c(0,20);
+by.y <- 10;ymaj <- seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+colrmp <- "blue"
+txt.cex <- 1
+par(mar=c(1.5,2,1,1),oma=c(2,3,4,1));
+layout(matrix(c(1:4,rep(5,3),6),2,4,byrow=T),heights=c(1,0.25));
+
+station.label=c("Sanibel","Shell Point","Cape Coral","Ft. Myers")
+recon.lab=c("Tarpon Bay","Shell Point",NA,"Ft. Myers")
+for(i in 1:3){
+  plot(calc_Sal~Date,subset(cre_sal,loc==CALSITES[i]),type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+  xx <- c(xlim.val[1],xlim.val[1],xlim.val[2],xlim.val[2])
+  yy <- c(0,5,5,0);polygon(x=xx,y=yy,col="peachpuff1")
+  yy2 <- c(35,ylim.val[2],ylim.val[2],35);polygon(x=xx,y=yy2,col="peachpuff1")
+  yy3 <- c(30,35,35,30);polygon(x=xx,y=yy3,col="khaki")
+  yy4 <- c(5,10,10,5);polygon(x=xx,y=yy4,col="khaki")
+  yy5 <- c(10,30,30,10);polygon(x=xx,y=yy5,col="darkseagreen2")
+  abline(h=seq(0,40,5))
+  with(subset(cre_sal,loc==CALSITES[i]),pt_line(Date,calc_Sal,1,colrmp,2,21,colrmp,cex=2,pt.col=colrmp))
+  with(subset(cre_sal,loc==CALSITES[i]),lines(Date,MovingAvg.7d,lwd=2.5,col="orange"))
+  axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d"),line=-0.5)
+  axis_fun(2,ymaj,ymin,ymaj)
+  mtext(side=3,station.label[i])
+  box(lwd=1)
+  if(i==1){mtext(side=2,"Salinity (PSU)",line=2,cex=1)}
+  if(i==2){mtext(expression(paste(underline("Oyster Condition"))),side=3,cex=1,line=1.75,outer=F)}
+}
+
+plot(calc_Sal~Date,subset(cre_sal,loc==CALSITES[i]),type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+xx=c(xlim.val[1],xlim.val[1],xlim.val[2],xlim.val[2])
+yy=c(0,10,10,0);polygon(x=xx,y=yy,col="darkseagreen2")
+yy=c(10,15,15,10);polygon(x=xx,y=yy,col="khaki")
+yy=c(15,ylim.val[2],ylim.val[2],15);polygon(x=xx,y=yy,col="peachpuff1")
+abline(h=seq(0,40,5))
+with(subset(cre_sal,loc==CALSITES[4]),pt_line(Date,calc_Sal,1,colrmp,2,21,colrmp,cex=2,pt.col=colrmp))
+with(subset(cre_sal,loc==CALSITES[4]),lines(Date,MovingAvg.7d,lwd=2.5,col="orange"))
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d"),line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj)
+mtext(side=3,station.label[4])
+box(lwd=1)
+mtext("Month/Day",side=1,line=-6,cex=1,outer=T)
+mtext(expression(paste(underline("Tape grass Condition"))),side=3,cex=1,line=1.75,outer=F)
+
+plot(0:1,0:1,ann=F,axes=F,type="n")
+
+legend(0.25,0.15,legend=c("Daily Average", "7-Day Moving Avg"),
+       pch=c(21,NA),
+       lty=c(NA,1),
+       lwd=c(0.01,3),
+       col=c("blue","orange"),
+       pt.bg=c("blue",NA),
+       pt.cex=1.5,ncol=1,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj = 0,title="")
+legend(0.5,0.15,legend=c("Poor(<5 or >35)","Fair (5-10 or 30-35)","Good(10-30)"),
+       pch=c(22,22,22),
+       lty=NA,
+       lwd=0.01,
+       col="black",
+       pt.bg=c("peachpuff1","khaki","darkseagreen2"),
+       pt.cex=2.5,ncol=1,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj = 0,title="Oyster Salinity Condition")
+
+plot(0:1,0:1,ann=F,axes=F,type="n")
+legend(0.5,0.15,legend=c("Poor(>15)","Fair (10 - 15)","Good(<10)"),
+       pch=c(22,22,22),
+       lty=NA,
+       lwd=0.01,
+       col="black",
+       pt.bg=c("peachpuff1","khaki","darkseagreen2"),
+       pt.cex=2.5,ncol=1,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj = 0,title="Tape Grass Salinity Condition")
+
+# dev.off()
+```
+
+<br>
+
+------------------------------------------------------------------------
+
+# St Lucie River Estuary
+
+## Discharge Conditions
+```{r SLE Q,include =FALSE}
+SLE_locs <- c("GORDY","S49","S48","S80","S308")
+SLE_Qdat <- subset(Qdat,loc%in%SLE_locs)|>
+  dcast(Date+loc~DA_P,value.var = "Data.Value",mean,na.rm=T)
+
+SLE_Qdat$Data.Value <- SLE_Qdat$P1
+#  SLE_Qdat$Data.Value <- apply(SLE_Qdat[c("P1","P2")], 1, function(x) x[!is.na(x)][1]);  
+SLE_Qdat <- dcast(SLE_Qdat,Date~loc,value.var = "Data.Value", fun.aggregate = function(x) mean(cfs.to.acftd(x),na.rm=T))
+SLE_Qdat[is.na(SLE_Qdat)] <- 0; #replace any NAs with 0 
+
+
+for(col in SLE_locs){
+  SLE_Qdat[[paste0(col, ".cfs")]] <- SLE_Qdat[[col]] * (1/cfs.to.acftd(1))
+}
+
+SLE_Qdat$C44 <- with(SLE_Qdat,ifelse(S80.cfs<S308.cfs,0,S80.cfs-S308.cfs))
+SLE_Qdat$NorthFork <- apply(SLE_Qdat[,c("GORDY.cfs","S49.cfs","S48.cfs")],1,sum,na.rm=T)
+
+SLE_Qdat$SLE.tot <- apply(SLE_Qdat[,c("GORDY.cfs","S49.cfs","S48.cfs","S80.cfs")],1,sum,na.rm=T)
+SLE_Qdat$Q.14 <- rollapplyr(SLE_Qdat$SLE.tot,14,mean,fill=NA)
+SLE_Qdat$Q.7 <- rollapplyr(SLE_Qdat$SLE.tot,7,mean,fill=NA)
+SLE_Qdat$S308Q.7 <- rollapplyr(SLE_Qdat$S308.cfs,7,mean,fill=NA)
+SLE_Qdat$WY <- WY(SLE_Qdat$Date)
+SLE_Qdat$DOWY <- hydro.day(SLE_Qdat$Date)
+
+SLE_Qdat$cum.S80 <- with(SLE_Qdat,ave(S80,WY,FUN = function(x)cumsum(ifelse(is.na(x),0,x))))
+SLE_Qdat$cum.S308 <- with(SLE_Qdat,ave(S308,WY,FUN = function(x)cumsum(ifelse(is.na(x),0,x))))
+SLE_Qdat$cum.S308pos <- with(SLE_Qdat,ave(S308,WY,FUN = function(x)cumsum(ifelse(is.na(x),0,ifelse(x<0,0,x)))))
+
+```
+
+```{r, SLEFlow, echo=FALSE,fig.width=7,fig.height=5,fig.align='center',fig.cap="Daily and 14-day moving average discharge for north and south fork relative to the Northern Estuaries RECOVER performance measure for the recent 30-day period."}
+max.q <- max(subset(SLE_Qdat,Date%in%seq(date.fun(as.Date(Sys.Date())-30),date.fun(as.Date(Sys.Date())),"1 days"))[,c("SLE.tot","Q.14")],na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(1,0.5))
+par(mar=c(2,2,1,2),oma=c(0.5,3,1,2));
+plot(S80.cfs~Date,SLE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",xaxt="n",yaxt="n",xlab=NA,ylab=NA)
+xx <- c(xlim.val[1],xlim.val[1],xlim.val[2],xlim.val[2])
+yy3 <- c(1700,ylim.max,ylim.max,1700);polygon(x=xx,y=yy3,col=adjustcolor("red",0.5))
+yy4 <- c(1400,1700,1700,1400);polygon(x=xx,y=yy4,col=adjustcolor("yellow",0.5))
+yy5 <- c(150,1400,1400,150);polygon(x=xx,y=yy5,col=adjustcolor("green",0.5))
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+with(SLE_Qdat,pt_line(Date,SLE.tot,2,"black",1,21,"grey",cex=1.25,pt.lwd=0.1))
+with(SLE_Qdat,lines(Date,Q.14,lwd=3,col=adjustcolor("dodgerblue3",0.5)))
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d/%Y"),line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj,cex.axis=1)
+axis_fun(4,ymaj,ymin,format(round(cfs.to.acftd(ymaj)/1000,1)),cex.axis=1)
+mtext(side=3,line=-1.25,adj=0,col="white"," Does not include coastal run-off",cex=0.95,font=2)
+
+box(lwd=1)
+mtext("Date\n(MM/DD/YYYY)",side=1,line=2.75,cex=1)
+mtext("Discharge (cfs)",side=2,line=3.5,cex=1)
+# mtext("Discharge (kAc-Ft D\u207B\u00B9)",side=4,line=2.5,cex=1.25)
+mtext(expression("Daily Discharge (x1000 Ac-Ft d"^" -1"*")"),side=4,line=2.5,cex=1)
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.1,0.75,
+       legend=c( "Damaging (>1700 cfs)","Stress (1400 - 1700 cfs)","Optimum (150 - 1400 cfs)"),
+       pch=22,pt.bg=adjustcolor(c("red","yellow","green"),0.5),pt.cex=2,
+       ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=1,xpd=NA,xjust=0.5,title.adj = 0,title='RECOVER PM')
+legend(0.75,0.75,
+       legend=c("Daily Discharge (S79)","14-Day moving average"),
+       pch=c(21,NA),pt.bg=c("grey",NA),pt.cex=c(1.5,NA),
+       lty=c(NA,1),lwd=c(0.5,2),col=c("black",adjustcolor(c("dodgerblue1"),0.5)),
+       ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=1,xpd=NA,xjust=0.5,title.adj = 0,title='')
+```
+
+**St Lucie Conditions Summary:** Flow to the St Lucie Estuary had a
+7-day average of
+**`r format(round(subset(SLE_Qdat,Date==date.fun(as.Date(End.Date)-1))$Q.7,0),big.mark=",")`
+cfs** from **North and South Forks** with a 7-day average of
+**`r format(round(subset(SLE_Qdat,Date==date.fun(as.Date(End.Date)-1))$S308Q.7,0),big.mark=",")`
+cfs** coming from the lake at **S-308**.
+
+```{r SLE_LOK_Q, echo=FALSE,fig.width=6,fig.height=4.5,fig.align='center',fig.cap="S-308 (from Lake Okeechobee), S-80 (to Lower Fork),  C-44 Basin and North Fork (Gordy Rd, S49, S48) daily discharge. C-44 Basin Flow was calculated as the difference from S-308 and S-80."}
+max.q <- max(subset(SLE_Qdat,Date%in%seq(date.fun(as.Date(Sys.Date())-30),date.fun(as.Date(Sys.Date())),"1 days"))[,c("S80.cfs","NorthFork","S308.cfs")],na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+
+SLE_Q_cols <- c("dodgerblue1","indianred1","black","lightgreen")
+
+layout(matrix(1:2,2,1,byrow=F),widths=c(2,1),heights=c(2,0.4))
+par(mar=c(2,2,1,1),oma=c(1,3,1,2));
+plot(S80~Date,SLE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=FALSE,axes=FALSE)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+with(SLE_Qdat,lines(Date,S80.cfs,col=SLE_Q_cols[1],lwd=2))
+with(SLE_Qdat,lines(Date,S308.cfs,col=SLE_Q_cols[2],lwd=2,lty=2))
+with(SLE_Qdat,lines(Date,C44,col=SLE_Q_cols[3],lwd=2,lty=3))
+with(SLE_Qdat,lines(Date,NorthFork,col=SLE_Q_cols[4],lwd=2,lty=1))
+axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d/%Y"),line=-0.5)
+axis_fun(2,ymaj,ymin,format(ymaj),cex.axis=1)
+box(lwd=1)
+mtext("Date\n(MM/DD/YYYY)",side=1,line=2.75,cex=1)
+mtext("Daily Discharge (cfs)",side=2,line=3.5,cex=1)
+
+plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend(0.5,0.6,
+       legend=c("S-80 (to Estuary)","S-308 (from Lake)","C-44 Basin Flow","North Fork"),
+       col=SLE_Q_cols,lty=c(1,2,3,1),lwd=c(2,2,2,2),pt.cex=2,ncol=2,cex=1,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+
+```
+
+<br>
+
+```{r SLE_cumQ, echo=FALSE,fig.width=7,fig.height=4.5,fig.align='center',fig.cap="Cumulative discharge for S-80 (to Tidal Basin) and S-308 (from Lake Okeechobee) for the last three Florida Water Years (May - April). Day of water year is analogous to day of year with Day 1 = May 1."}
+max.q <- max(SLE_Qdat$cum.S80,na.rm=T)
+ylim.max <- ceiling(max.q*1.2)
+
+ylim.val <- c(0,ylim.max);ymaj <- heckbert_labs(ylim.val[1],ylim.val[2],6);ymin <- seq(ylim.val[1],ylim.val[2],min(diff(ymaj))/2)
+xlim.val=c(0,366);xmaj=seq(xlim.val[1],xlim.val[2],90);xmin=seq(xlim.val[1],xlim.val[2],30)
+cum_cols=c("indianred1","orange","dodgerblue1")
+
+layout(matrix(1:2,1,2,byrow=F),widths = c(1,1,0.5))
+par(mar=c(2,2,1,1),oma=c(1,3,1,2));
+
+plot(cum.S80~DOWY,SLE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+for(i in 1:3){
+  if(i==3){
+    lines(cum.S80~DOWY,subset(SLE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=2.5,col=cum_cols[i])}
+  else{
+    lines(cum.S80~DOWY,subset(SLE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=3,col=adjustcolor(cum_cols[i],0.5))
+  }
+}
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj/1000,cex.axis=1);box(lwd=1)
+mtext("Day of Water Year",side=1,line=2,cex=1)
+mtext(expression("Cumulative Discharge (x1000 Ac-Ft WY"^" -1"*")"),side=2,line=3.5,cex=1)
+mtext(side=3,"S-80",adj=0)
+
+plot(cum.S308pos~DOWY,SLE_Qdat,type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=3,col="grey")
+for(i in 1:3){
+  if(i==3){
+    lines(cum.S308pos~DOWY,subset(SLE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=2.5,col=cum_cols[i])}
+  else{
+    lines(cum.S308pos~DOWY,subset(SLE_Qdat,WY==seq(CurWY-2,CurWY,1)[i]),lwd=3,col=adjustcolor(cum_cols[i],0.5))
+  }
+}
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,NA);box(lwd=1)
+mtext("Day of Water Year",side=1,line=2,cex=1)
+mtext(side=3,"S-308",adj=0)
+mtext(side=3,line=-1," positive flow only",adj=0,cex=0.9,font=3)
+
+#plot(0:1,0:1,type="n",yaxt="n",xaxt="n",bty="n")
+legend("topright",
+       legend=c(paste0("WY",seq(CurWY-2,CurWY,1))),
+       col=cum_cols,lty=c(1),lwd=c(2.5),pt.cex=1,ncol=1,cex=1,bty="n",y.intersp=1,x.intersp=0.5,xpd=NA,xjust=0.5)
+
+```
+
+## Salinity
+
+```{r SLE Sal,include = FALSE}
+STLSITES <- c("HR1","STL_RIVER","STL_STPT")
+station.label <- c("HR1","US1","A1A")
+sle_sal <- subset(sal_dat_xtab,loc%in%STLSITES)
+
+sle_sal$loc <- as.factor(sle_sal$loc)
+
+# fill <- expand.grid(SITE=STLSITES,Date=date.fun(seq(Start.Date[1],YEST,"1 days")))
+# fill$DOY <- as.numeric(format(fill$Date,"%j"))
+# fill$DOWY <- as.numeric(hydro.day(fill$Date))
+# fill$WY <- WY(fill$Date)
+# sle_sal <- merge(sle_sal,fill,c("SITE","Date","DOY","DOWY","WY"),all.y=T)
+
+## removed daily sample number screening
+sle_sal$MovingAvg.7d=with(sle_sal,ave(calc_Sal,loc,FUN=function(x) rollapplyr(x,7,mean,fill=NA)))
+
+```
+
+```{r SLE_Sal,echo=FALSE,fig.width=10,fig.height=5,fig.align='center',fig.cap="Daily average bottom salinity data for the last 14-days from sampling locations within the tidal St Lucie River Estuary relative to oyster health conditions."}
+
+# fill <- expand.grid(SITE=STLSITES,Date=date.fun(seq(Start.Date[1],YEST,"1 days")))
+# fill$DOY <- as.numeric(format(fill$Date,"%j"))
+# fill$DOWY <- as.numeric(hydro.day(fill$Date))
+# fill$WY <- WY(fill$Date)
+# sle_sal <- merge(sle_sal,fill,c("SITE","Date","DOY","DOWY","WY"),all.y=T)
+
+## removed daily sample number screening
+xlim.val <- date.fun(c(as.Date(End.Date)-30,as.Date(End.Date)+3));xmaj <- seq(xlim.val[1],xlim.val[2],by="7 days");xmin <- seq(xlim.val[1],xlim.val[2],by="1 days")
+ylim.val <- c(0,40);
+by.y <- 10;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+colrmp="blue"
+txt.cex=1
+par(mar=c(1.5,2,1,1),oma=c(2,3,4,1));
+layout(matrix(c(1:3,rep(4,3)),2,3,byrow=T),heights=c(1,0.25));
+for(i in 1:3){
+  plot(calc_Sal~Date,subset(sle_sal,loc==STLSITES[i]),type="n",ylim=ylim.val,xlim=xlim.val,xaxs="i",yaxs="i",ann=F,axes=F)
+  xx <- c(xlim.val[1],xlim.val[1],xlim.val[2],xlim.val[2])
+  yy <- c(0,5,5,0);polygon(x=xx,y=yy,col="peachpuff1")
+  yy2 <- c(35,40,40,35);polygon(x=xx,y=yy2,col="peachpuff1")
+  yy3 <- c(30,35,35,30);polygon(x=xx,y=yy3,col="khaki")
+  yy4 <- c(5,10,10,5);polygon(x=xx,y=yy4,col="khaki")
+  yy5 <- c(10,30,30,10);polygon(x=xx,y=yy5,col="darkseagreen2")
+  abline(h=seq(0,40,5))
+  with(subset(sle_sal,loc==STLSITES[i]),pt_line(Date,calc_Sal,1,colrmp,2,21,colrmp,cex=2,pt.col=colrmp))
+  with(subset(sle_sal,loc==STLSITES[i]),lines(Date,MovingAvg.7d,lwd=2.5,col="orange"))
+  axis_fun(1,xmaj,xmin,format(xmaj,"%m/%d"),line=-0.5)
+  axis_fun(2,ymaj,ymin,ymaj)
+  mtext(side=3,station.label[i])
+  box(lwd=1)
+  if(i==1){mtext(side=2,"Salinity (PSU)",line=2,cex=1)}
+  if(i==2){mtext(expression(paste(underline("Oyster Condition"))),side=3,cex=1,line=1.75,outer=F)}
+}
+mtext("Month/Day",side=1,line=-6,cex=1,outer=T)
+plot(0:1,0:1,ann=F,axes=F,type="n")
+# mtext(side=3,line=-1.25,"Date (Month/Day)")
+legend(0.25,0.15,legend=c("Daily Average", "7-Day Moving Avg"),
+       pch=c(21,NA),
+       lty=c(NA,1),
+       lwd=c(0.01,3),
+       col=c("blue","orange"),
+       pt.bg=c("blue",NA),
+       pt.cex=1.5,ncol=1,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj = 0,title="")
+legend(0.75,0.15,legend=c("Poor(<5 or >35)","Fair (5-10 or 30-35)","Good(10-30)"),
+       pch=c(22,22,22),
+       lty=NA,
+       lwd=0.01,
+       col="black",
+       pt.bg=c("peachpuff1","khaki","darkseagreen2"),
+       pt.cex=2.5,ncol=1,cex=1.25,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj = 0,title="Oyster Salinity Condition")
+
+  
+```
+
+------------------------------------------------------------------------
+
+*Page rendered: `r format(Sys.time(), "%b %d, %Y %H:%M %Z")`  •  Data through: `r format(YEST, "%b %d, %Y")`*
